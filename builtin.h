@@ -1,0 +1,2 @@
+int display(int x);
+

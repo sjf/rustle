@@ -1,0 +1,6 @@
+(define msg "hello")
+(display msg)
+(display " ")
+(set! msg "world")
+(display msg)
+(display (display "foo!"))

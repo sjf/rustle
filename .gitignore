@@ -1,2 +1,4 @@
+scm/*
 !scm/*.scm
 *.o
+main

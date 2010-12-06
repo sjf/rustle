@@ -5,11 +5,11 @@
       (set! *code* (append *code* codes))
       (set! *code* (append *code* (list codes)))))
 
-(define temp-count 0)
+(define _temp-count 0)
 (define (c-tempname)
   (define var_name 
-    (string-append "v_" (number->string temp-count)))
-  (set! temp-count (+ temp-count 1))
+    (string-append "v_" (number->string _temp-count)))
+  (set! _temp-count (+ _temp-count 1))
   var_name)
 
 (define (c-escape s)
@@ -30,7 +30,7 @@
 
   (cond ((eq? type *t_string*) 
          (emit-code (sprintf 
-                     "set_str_val(~a, ~a);" 
+                     "obj_set_str_val(~a, ~a);" 
                      var_name (c-escape value))))
         ((eq? type *t_int*) 
          (emit-code (sprintf 
@@ -55,10 +55,16 @@
 
 (define (c-call-function function args)
   (define res_name (c-tempname))
-  (emit-code (sprintf "object* ~a = ~a(~a);" 
-                      res_name
-                      function
-                      (join args ", ")))
+  (define sep ", ")
+  (if (null? args) (set! sep ""))
+  (emit-code (sprintf 
+              "object* ~a = call_procedure(~a, ~a~a ~a);"
+              ;(emit-code (sprintf "object* ~a = ~a(~a);" 
+              res_name
+              function
+              (length args)
+              sep
+              (join args ", ")))
   res_name)
 
   

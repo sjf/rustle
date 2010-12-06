@@ -21,7 +21,8 @@
      ((null? strs) res)
      ((single strs) (string-append res (car strs)))
      (else (loop (cdr strs)
-                 (string-append (string-append res (car strs)) sep))))))
+                 (string-append 
+                  (string-append res (car strs)) sep))))))
 
 (define (to-str x)
   (sprintf "~a" x))        

@@ -1,124 +1,49 @@
 (declare (uses posix))
-
-(define (fatal_error s . args)
-  (print "Error: " s)
-  (if (not (null? args))
-      (apply print args))
-  (exit 1))
-
-(define (read_all filename)
-  (let loop ((port (open-input-file filename))
-             (src (list)))
-    (define x (read port))
-    (if (eof-object? x)
-        (reverse src)
-        (loop port (cons x src)))))
-
-(define (string-empty? s)
-  (eq? (string-length s) 0))
-
-(define (string-at s i)
-  (substring s i (+ i 1)))
-
-(define (string-slice1 s start)
-  (substring s start (string-length s)))
-
-(define (string-index s c)
-  (let loop ((pos 0))
-    (cond ((>= pos (string-length s)) -1)
-          ((equal? c (string-at s pos)) pos)
-          (else (loop (+ pos 1))))))
-
-(define (to-str x)
-  (sprintf "~a" x))        
-
-(define (single lst)
-  (eq? 1 (length lst)))
-
-(define (join lst sep)
-  (define strs (map to-str lst))
-  (let loop ((strs strs)
-             (res ""))
-    (cond 
-     ((null? strs) res)
-     ((single strs) (string-append res (car strs)))
-     (else (loop (cdr strs)
-                 (string-append (string-append res (car strs)) sep))))))
-     
-(define (replace_ext filename ext)
-  (define ind (string-index filename "."))
-  (if (eq? ind -1)
-      (string-append filename ext)
-      (string-append (substring filename 0 ind) ext)))
-
-(define (member? lst x)
-  (not (eq? (member lst x) #f)))
+(require 'string)
+(require 'util)
+(require 'c_code)
+(require 'testing)
 
 ;; some constants
 (define *expression* (quote expression))
 (define *t_var*      (quote var))
 
-(define *t_int*      0)
-(define *t_string*   1)
+;; these must match the constants in builtin.c
+(define *t_int*      (quote T_INT))
+(define *t_string*   (quote T_STR))
 
 
 (define (type-of l) (car l))
 (define (value-of l) (caddr l))
 
-(define (c_escape s)
-  ;; todo
-  (sprintf "\"~a\"" s))
-
-(define (gen-new-obj name type value)
-  (emit-code (sprintf "object *~a = new_object(~a);" name type))
-  (cond ((eq? type *t_string*) 
-         (emit-code (sprintf "set_str_val(~a, ~a);" 
-                             name (c_escape value))))
-        ((eq? type *t_int*)
-         (emit-code (sprintf "~a->val.int_ = ~a;" name value)))))
-
 (define (gen-int-const value)     
-  (define name (gen-tempname))
-  (gen-new-obj name *t_int* value)
-  (list *expression* *t_var* name))
+  (list *expression* *t_var* 
+        (c-new-obj *t_int* value)))
 
 (define (gen-string-const value)  
-  (define name (gen-tempname))
-  (gen-new-obj name *t_string* value)
-  (list *expression* *t_var* name))
+  (list *expression* *t_var* 
+        (c-new-obj *t_string* value)))
 
-(define *code* (list))
-(define (emit-code codes)
-  (print "EMIT: " codes)
-  (if (list? codes)
-      (set! *code* (append *code* codes))
-      (set! *code* (append *code* (list codes)))))
+(define (var-name expr)
+  (caddr expr))
 
 (define (special? form)
   (and (list? form) 
-       (member? form (quote (lambda let define set! quote if and or begin)))))
+       (member? (car form) 
+                (quote (lambda let define set! quote if and or begin)))))
 
-(define temp-count 0)
-(define (gen-tempname)
-  (define name (string-append "v_" (number->string temp-count)))
-  (set! temp-count (+ temp-count 1))
-  name)
     
 (define (gen-true-false form)
      (print "Passing.." form))
 
 (define (gen-symbol symbol)
-  (define var_name 
-    (cond ((eq? symbol (quote +)) "add")
-          ((eq? symbol (quote -)) "sub")
-          ((eq? symbol (quote *)) "mul")
-          ((eq? symbol (quote /)) "divv")
-          ((eq? symbol (quote display)) "display")
-          (else (gen-tempname))))
-  ;(emit-code (sprintf "// obj *~a = lookup(~a);" var_name symbol))
-  ;; for now      
-  ;;(emit-code (sprintf "int ~a = 0;" name))
-  (list *expression* *t_var* var_name)
+  (cond ((eq? symbol (quote +)) (list *expression* *t_var* "add"))
+        ((eq? symbol (quote -)) (list *expression* *t_var* "sub"))
+        ((eq? symbol (quote *)) (list *expression* *t_var* "mul"))
+        ((eq? symbol (quote /)) (list *expression* *t_var* "divv"))
+        ;((eq? symbol (quote display)) (list *expression* *t_var* "display"))
+        (else (define var_name (c-lookup-symbol-table symbol))
+              (list *expression* *t_var* var_name)))
   )
              
 ; special forms:
@@ -136,25 +61,56 @@
 (define (type x)
   (cond ((string? x) "string")
         ((number? x) "number")
+        ((special? x) "special-form")
         ((symbol? x) "symbol")
         ((list? x)   "list")
         ((eq? #t x)  "#t")
         ((eq? #f x)  "#f")
         ((char? x)   "char")))
 
-(define (gen-fun-call lst)
+(define (gen-fun-call form)
+  (define lst (map generate form))
   (if (null? lst)
       (fatal-error "Cannot call empty list"))
   (define func (car lst))
   (if (not (eq? *expression* (type-of func)))
       (fatal-error "Cannot call " (write func)))
   (define args (map value-of (cdr lst)))
-  (define res_name (gen-tempname))
-  (emit-code (sprintf "int ~a = ~a(~a);" 
-                      res_name
-                      (value-of func)
-                      (join args ", ")))
+  (define res_name 
+    (c-call-function (value-of func) args))  
   (list *expression* *t_var* res_name))
+
+(define (check-args args expected-len function)
+  (if (not (eq? expected-len (length args)))
+      (fatal-error (sprintf 
+                    "Expected ~a arguments, got ~a: ~a" 
+                    expected-len (length args) function))))
+
+(define (check-type arg type-pred function)
+  (if (not (type-pred arg))
+      (fatal-error (sprintf "Unexpected type got ~a: ~a"
+                            (type-of arg) function))))
+
+
+(define (gen-special form) 
+  (define val (car form))
+  (define args (cdr form))
+  (cond ((eq? val (quote set!))
+         (check-args args 2 "set!")
+         (check-type (car args) symbol? "set!")
+         (define value_name (var-name (generate (cadr args))))
+         (define sym_name (var-name (gen-symbol (car args))))
+         (c-assign sym_name value_name))
+         
+        ((eq? val (quote define)) 
+         (check-args args 2 "define")
+         (check-type (car args) symbol? "define")
+         (define var_name (var-name (generate (cadr args))))
+         (define sym_name (car args))
+         (c-add-to-symbol-table sym_name var_name))
+         
+        (else (display "Unsupported")))
+)
 
 (define (generate form)
   (print "Generating: " form " " (type form))
@@ -163,25 +119,19 @@
         ((symbol? form)  (gen-symbol form))
         ((eq? #t form)   (gen-true-false form))
         ((eq? #f form)   (gen-true-false form))
-        ((special? form) (print "special form " form))
-        ((list? form)    (gen-fun-call (map generate form)))
+        ((special? form) (gen-special form))
+        ((list? form)    (gen-fun-call form))
         (else (print "Passing.. " form)))
 )
 
-(define (setup-sym-table) 
-  (list)
-)
-
 (define (generate-code src)
-  (emit-code (setup-sym-table))
+  (c-setup-symbol-table)
   ;; add setup code for main namespace
   (map generate src)
   )
 
 (define *c_start* 
-"#include <stdio.h>
-#include <builtin.c>
-
+"#include <runtime.c>
 void run_main();
 
 int main(int argc, char** argv) {
@@ -205,7 +155,8 @@ void run_main(){
   (process-execute 
    "/usr/bin/gcc-4.3"
    ;(list "-I." "builtin.o" filename "-o" exec_filename)))
-   (list "-I."  filename "-o" exec_filename)))
+   (list "-Wshadow" "-std=c99" "-Wall" 
+         "-I."  filename "-o" exec_filename)))
 
 (define (main) 
   (print "hello world")
@@ -216,7 +167,8 @@ void run_main(){
 
   ;; Parse the file
   (define src (read_all filename))
-  (print src)
+  (set! src (transform-==> src))
+
   ;; Generate code
   (define code (generate-code src))
   (write_c_file c_src *code*)

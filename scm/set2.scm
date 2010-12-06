@@ -4,3 +4,6 @@
 (set! msg "world")
 (display msg)
 (display (display "foo!"))
+(display evil)
+(display sunday)
+(sunday)

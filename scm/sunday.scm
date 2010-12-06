@@ -1,0 +1,2 @@
+(sunday)
+(display "foo")

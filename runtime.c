@@ -7,7 +7,7 @@
 //#define __USE_GNU
 #include <search.h>
 #include <errno.h>
-#include <builtin.h>
+#include <runtime.h>
 
 #define T_NONE  0
 #define T_INT   1
@@ -21,27 +21,6 @@
 
 #define LOG(x) printf("%s: %d\n",#x,x);
 
-// others list, vector, char, t/f, symbol
-
-typedef struct proc_ {
-  void *function;
-  int arity;
-} proc;
-
-typedef struct object_ {
-  char type;
-  union value {
-    int int_;
-    char *str;
-    char chr;
-    proc proc;
-  } val;
-} object;
-
-object none_object; 
-object true_object;
-object false_object;
-
 struct environ_ {
   struct hsearch_data table;
   struct environ_ *parent;
@@ -50,10 +29,41 @@ typedef struct environ_ environ;
 
 environ builtins;
 
+typedef struct proc_ {
+  void *func;
+  int arity;
+  environ* closure;
+} proc;
+
+
+typedef struct object_ {
+  char type;
+  union value {
+    int int_;
+    char *str;
+    char chr;
+    struct proc_ proc;
+    // others list, vector, char, t/f, symbol
+  } val;
+} object;
+
+object none_object; 
+object true_object;
+object false_object;
+
+
 object *new_object(char type) {
   object *res = malloc(sizeof(object));
   bzero(res,sizeof(object));
   res->type = type;  
+  return res;
+}
+
+object *new_proc_object(void *func, int arity, environ* env){
+  object *res = new_object(T_PROC);
+  res->val.proc.func = func;
+  res->val.proc.arity = arity;
+  res->val.proc.closure = env;
   return res;
 }
 
@@ -79,7 +89,7 @@ object *new_static_object(char type, void *value){
 
 object *new_static_proc(void *func, int arity){
   object *res = new_static_object(T_PROC, NULL);
-  res->val.proc.function = func;
+  res->val.proc.func = func;
   res->val.proc.arity = arity;
   return res;
 }
@@ -104,7 +114,7 @@ void init_env(environ *env) {
 
 ////////
 
-object *display(object *obj) {
+object *display(environ* unused, object *obj) {
   switch (obj->type) {
   case T_NONE:
     printf("#No-value\n");
@@ -150,9 +160,11 @@ object *sunday() {
 
 ////////
 
-void new_environment(environ* env, environ* parent) {
+environ* new_environment(environ* parent) {
+  environ *env = malloc(sizeof(environ));
   init_env(env);
   env->parent = parent;
+  return env;
 }
 
 void add_to_environment(environ *env, char *sym, object *obj) {
@@ -187,11 +199,17 @@ object *lookup_sym(environ* env, char *sym) {
   return (object *)result->data;
 }
 
+#define FP1 (object *(*)(environ*))
+//note args cannot be zero
+#define FP(args...) (object*(*)(environ*, ## args)) 
+#define ARG object*
+
 object *call_procedure(object *obj, int arglen, ...) {
   if (obj->type != T_PROC) {
     FatalError("Cannot call object of type: %d", obj->type);
   }
   int arity = obj->val.proc.arity;
+  environ* env = obj->val.proc.closure;
   if (arglen != arity) {
     FatalError("Prodecure expected %d arguments, recieved %d", arity, arglen);
   }
@@ -206,24 +224,27 @@ object *call_procedure(object *obj, int arglen, ...) {
 
   switch (arity) {
   case 0:
-    return ((object*(*)())obj->val.proc.function)();
+    return (FP1 obj->val.proc.func)(env);
     break;
   case 1:
-    return ((object*(*)(object *))obj->val.proc.function)(args[0]);
+    return (FP(ARG)obj->val.proc.func)(env,args[0]);
     break;
   case 2:
-    //break;
+    return (FP(ARG,ARG)obj->val.proc.func)(env,args[0],args[1]);
+    break;
   case 3:
-    //break;
+    return (FP(ARG,ARG,ARG)obj->val.proc.func)(env,args[0],args[1],args[2]);
+    break;
   case 4:
-    //break;
+    return (FP(ARG,ARG,ARG,ARG)obj->val.proc.func)(env,args[0],args[1],args[2],args[3]);
+    break;
   default:
-    FatalError("Unsupported arity: %d",obj->val.proc.arity);
+    FatalError("Error calling procedure with unsupported arity: %d",obj->val.proc.arity);
   }
   return &none_object;
 }
 
-void setup_main_environment(environ* env) {
+environ* setup_main_environment() {
   none_object.type = T_NONE;
   true_object.type = T_TRUE;
   false_object.type = T_FALSE;
@@ -238,10 +259,10 @@ void setup_main_environment(environ* env) {
   add_to_environment(&builtins, "evil", test);
 
   object *test2 = new_object(T_PROC);
-  test2->val.proc.function = &sunday;
+  test2->val.proc.func = &sunday;
   test2->val.proc.arity = 0;
   add_to_environment(&builtins, "sunday", test2);
 
-  new_environment(env, &builtins);
+  return new_environment(&builtins);
   
 }

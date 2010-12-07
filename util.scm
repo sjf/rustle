@@ -23,3 +23,13 @@
 
 (define (member? lst x)
   (not (eq? (member lst x) #f)))
+
+(define (last lst)
+  (car (reverse lst)))
+
+(define (repeat what times)
+  (let loop ((res (list))
+             (n times))
+    (if (<= n 0)
+        res
+        (loop (cons what res) (- n 1)))))

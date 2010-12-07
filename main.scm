@@ -6,6 +6,7 @@
 
 ;; some constants
 (define *expression* (quote expression))
+(define *procedure*  (quote procedure))
 (define *t_var*      (quote var))
 
 ;; these must match the constants in builtin.c
@@ -80,11 +81,16 @@
     (c-call-function (value-of func) args))  
   (list *expression* *t_var* res_name))
 
-(define (check-args args expected-len function)
+(define (check-args= args expected-len function)
   (if (not (eq? expected-len (length args)))
       (fatal-error (sprintf 
                     "Expected ~a arguments, got ~a: ~a" 
                     expected-len (length args) function))))
+(define (check-args<= args min-len function)
+  (if (< (length args) min-len)
+      (fatal-error (sprintf 
+                    "Expected at least ~a arguments, got ~a: ~a" 
+                    min-len (length args) function))))
 
 (define (check-type arg type-pred function)
   (if (not (type-pred arg))
@@ -96,19 +102,33 @@
   (define val (car form))
   (define args (cdr form))
   (cond ((eq? val (quote set!))
-         (check-args args 2 "set!")
+         (check-args= args 2 "set!")
          (check-type (car args) symbol? "set!")
          (define value_name (var-name (generate (cadr args))))
          (define sym_name (var-name (gen-symbol (car args))))
          (c-assign sym_name value_name))
          
         ((eq? val (quote define)) 
-         (check-args args 2 "define")
+         (check-args= args 2 "define")
          (check-type (car args) symbol? "define")
          (define var_name (var-name (generate (cadr args))))
          (define sym_name (car args))
          (c-add-to-symbol-table sym_name var_name))
          
+        ((eq? val (quote lambda))
+         (check-args<= args 2 "lambda")
+         (define formals (car args))
+         (define body (cdr args))
+         (check-type formals 
+                     (lambda (x) (or (list? x)
+                                     (symbol? x))) "lambda")
+         ;(define 
+         (print "Generating lambda: " body)      
+         
+         (define proc (c-new-procedure formals))
+         (define res (last (map generate body)))
+         (c-end-procedure (value-of res))
+         (list *procedure* #f proc))
         (else (display "Unsupported")))
 )
 
@@ -125,37 +145,18 @@
 )
 
 (define (generate-code src)
-  (c-setup-symbol-table)
+  (c-main)
   ;; add setup code for main namespace
   (map generate src)
-  )
-
-(define *c_start* 
-"#include <runtime.c>
-void run_main();
-
-int main(int argc, char** argv) {
-  run_main();
-  return 0;
-}
-void run_main(){
-")
-
-(define *c_end* "\n}\n")
-
-(define (write_c_file filename code)
-  (define port (open-output-file filename))
-  (display *c_start* port)
-  (display (join code "\n") port)
-  (display *c_end* port)
-  (close-output-port port))
+  (c-end-main)
+  #t)
 
 (define (compile filename)
   (define exec_filename (replace_ext filename ""))
   (process-execute 
    "/usr/bin/gcc-4.3"
    ;(list "-I." "builtin.o" filename "-o" exec_filename)))
-   (list "-Wshadow" "-std=c99" "-Wall" 
+   (list "-g" "-Wshadow" "-std=c99" "-Wall" "-Wno-unused-variable" 
          "-I."  filename "-o" exec_filename)))
 
 (define (main) 
@@ -170,8 +171,8 @@ void run_main(){
   (set! src (transform-==> src))
 
   ;; Generate code
-  (define code (generate-code src))
-  (write_c_file c_src *code*)
+  (generate-code src)
+  (c-write-src-file c_src)
   ;; Call gcc
   (compile c_src)
   )

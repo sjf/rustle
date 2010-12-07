@@ -1,0 +1,13 @@
+(define f (lambda () (display "ok")))
+(f)
+(define g (lambda (x) (display "lets go")))
+(g 1)
+(define x 42)
+(define h (lambda () (display "the meaning is ") 
+                     (display x)
+                     (set! x 56)
+                     (display x)))
+(h)
+(display "after h")
+(display x)
+

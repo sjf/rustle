@@ -59,12 +59,28 @@ object *new_object(char type) {
   return res;
 }
 
+void copy_object(object *dest, object *src) {
+  memcpy(dest, src, sizeof(object));
+}
+
+object *new_object_from(object *obj){
+  object *res = malloc(sizeof(object));
+  copy_object(res,obj);
+  return res;
+}
+
 object *new_proc_object(void *func, int arity, environ* env){
   object *res = new_object(T_PROC);
   res->val.proc.func = func;
   res->val.proc.arity = arity;
   res->val.proc.closure = env;
   return res;
+}
+
+void obj_set_str_val(object *obj, const char *str) {
+  size_t size = strlen(str) * sizeof(char);
+  obj->val.str = malloc(size);
+  memcpy(obj->val.str, str, size);
 }
 
 object *new_static_object(char type, void *value){
@@ -92,17 +108,6 @@ object *new_static_proc(void *func, int arity){
   res->val.proc.func = func;
   res->val.proc.arity = arity;
   return res;
-}
-
-void obj_set_str_val(object *obj, const char *str) {
-  size_t size = strlen(str) * sizeof(char);
-  obj->val.str = malloc(size);
-  memcpy(obj->val.str, str, size);
-}
-
-
-void copy_obj(object *dest, object *src) {
-  memcpy(dest, src, sizeof(object));
 }
 
 void init_env(environ *env) {

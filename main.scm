@@ -12,6 +12,7 @@
 ;; these must match the constants in builtin.c
 (define *t_int*      (quote T_INT))
 (define *t_string*   (quote T_STR))
+(define *t_none*     (quote T_NONE))
 
 
 (define (type-of l) (car l))
@@ -106,7 +107,8 @@
          (check-type (car args) symbol? "set!")
          (define value_name (var-name (generate (cadr args))))
          (define sym_name (var-name (gen-symbol (car args))))
-         (c-assign sym_name value_name))
+         (c-assign sym_name value_name)
+         (list *expression* #f *t_none*))
          
         ((eq? val (quote define)) 
          (check-args= args 2 "define")
@@ -118,13 +120,12 @@
         ((eq? val (quote lambda))
          (check-args<= args 2 "lambda")
          (define formals (car args))
-         (define body (cdr args))
+         (define body (cdr args))         
          (check-type formals 
                      (lambda (x) (or (list? x)
                                      (symbol? x))) "lambda")
          ;(define 
          (print "Generating lambda: " body)      
-         
          (define proc (c-new-procedure formals))
          (define res (last (map generate body)))
          (c-end-procedure (value-of res))
@@ -156,7 +157,7 @@
   (process-execute 
    "/usr/bin/gcc-4.3"
    ;(list "-I." "builtin.o" filename "-o" exec_filename)))
-   (list "-g" "-Wshadow" "-std=c99" "-Wall" "-Wno-unused-variable" 
+   (list "-g" "-Werror" "-Wshadow" "-std=c99" "-Wall" "-Wno-unused-variable" 
          "-I."  filename "-o" exec_filename)))
 
 (define (main) 

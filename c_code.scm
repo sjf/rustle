@@ -15,26 +15,22 @@
   (set! *src* (append *src* (car *blocks*)))
   (set! *blocks* (cdr *blocks*)))
 
-(define _temp-count 0)
-(define (c-tempname)
-  (define var_name 
-    (string-append "v_" (number->string _temp-count)))
-  (set! _temp-count (+ _temp-count 1))
-  var_name)
+(define (add1 x) (+ x 1))
+
+(define _var-count 0)
+(define (c-varname prefix)
+  (set! _var-count (add1 _var-count))
+  (string-append prefix "_" (number->string _var-count)))
 
 (define _proc-count 0)
 (define (c-procname)
-  (define proc_name 
-    (string-append "proc_" (number->string _proc-count)))
-  (set! _proc-count (+ _proc-count 1))
-  proc_name)
+  (set! _proc-count (add1 _proc-count))
+  (string-append "proc_" (number->string _proc-count)))
   
 (define (c-param-name arg)
-  (define param_name
-    (string-append 
-     (c-ident arg) "_" (number->string _temp-count)))
-  (set! _temp-count (+ _temp-count 1))
-  param_name)
+  (set! _var-count (add1 _var-count))
+  (string-append 
+   (c-ident arg) "_" (number->string _var-count)))
                
 (define (c-param-names args)
   (map (lambda (x) (cons x (c-param-name x)))
@@ -56,7 +52,7 @@
 (define (c-param-list lst) (join lst ", "))
 
 (define (c-new-obj type value)
-  (define var_name (c-tempname))
+  (define var_name (c-varname "v"))
   (emit-code (sprintf "object *~a = new_object(~a);" 
                       var_name type))
 
@@ -76,17 +72,19 @@
                       (c-escape symbol) var)))
 
 (define (c-lookup-symbol-table symbol)
-  (define var_name (c-tempname))
+  (define var_name (c-varname "v"))
   (emit-code (sprintf "object *~a = lookup_sym(env, ~a);" 
                       var_name (c-escape symbol)))
   var_name)
              
 (define (c-assign dest src)
-  (emit-code (sprintf "copy_obj(~a, ~a);" 
+  (emit-code (sprintf "copy_object(~a, ~a);" 
                       dest src)))
+(define (c-dereference x)
+  (string-append "*(" x ")"))
 
 (define (c-call-function function args)
-  (define res_name (c-tempname))
+  (define res_name (c-varname "v"))
   (define sep ", ")
   (if (null? args) (set! sep ""))
   (emit-code (sprintf 
@@ -110,7 +108,7 @@
 
 (define (c-new-procedure args)
   (define proc_name (c-procname))
-  (define var_name (c-tempname))
+  (define var_name (c-varname "v"))
   (emit-code (sprintf 
               "object *~a = new_proc_object(&~a, ~a, env);" 
               var_name proc_name (length args)))
@@ -128,7 +126,8 @@
   (emit-code "environ *env = new_environment(parent_env);")
   
   (map (lambda (param)
-         (emit-code (sprintf "add_to_environment(env, ~a, ~a);" 
+         ;; objects must be copied into the new namespace
+         (emit-code (sprintf "add_to_environment(env, ~a, new_object_from(~a));" 
                              (c-escape (car param))
                              (cdr param))))
        param-names)

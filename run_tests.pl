@@ -2,7 +2,15 @@
 use strict;
 use Term::ANSIColor qw(:constants);
 
-my @scm_files = glob("tests/*.scm") or die "Error getting scm files: $!";
+my @scm_files;
+if (scalar(@ARGV)) {
+    # tests specified on the command line
+    @scm_files = @ARGV;
+} else {
+    @scm_files = glob("tests/*.scm") or die "Error getting scm files: $!";
+}
+
+
 my @compile_fail;
 my @run_fail;
 my @output_fail;

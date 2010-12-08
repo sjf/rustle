@@ -32,10 +32,16 @@
 (define (c-param-name arg)
   (define param_name
     (string-append 
-     "object * " (c-ident arg) "_" (number->string _temp-count)))
+     (c-ident arg) "_" (number->string _temp-count)))
   (set! _temp-count (+ _temp-count 1))
   param_name)
-                   
+               
+(define (c-param-names args)
+  (map (lambda (x) (cons x (c-param-name x)))
+       args))
+
+(define (c-param-decl arg)
+  (string-append "object* " (cdr arg)))
 
 (define (c-escape s)
   ;; todo
@@ -47,7 +53,7 @@
   (to-str s)
 )
 
-(define (c-params lst) (join lst ", "))
+(define (c-param-list lst) (join lst ", "))
 
 (define (c-new-obj type value)
   (define var_name (c-tempname))
@@ -84,7 +90,7 @@
   (define sep ", ")
   (if (null? args) (set! sep ""))
   (emit-code (sprintf 
-              "object* ~a = call_procedure(~a, ~a~a ~a);"
+              "object *~a = call_procedure(~a, ~a~a ~a);"
               ;(emit-code (sprintf "object* ~a = ~a(~a);" 
               res_name
               function
@@ -106,17 +112,28 @@
   (define proc_name (c-procname))
   (define var_name (c-tempname))
   (emit-code (sprintf 
-              "object* ~a = new_proc_object(&~a, ~a, env);" 
+              "object *~a = new_proc_object(&~a, ~a, env);" 
               var_name proc_name (length args)))
+  
+  (define param-names (c-param-names args))
+  (define params (map c-param-decl param-names))
+  ;; start writing the function body definition
   (c-new-block)
-  ;; todo also emit a function definition somewhere
-  (define params
-    (c-params
-     (cons "environ *parent_env"
-           (map c-param-name args))))
-  (emit-code (sprintf "object * ~a(~a) {"
-                      proc_name params))
-  (emit-code "environ* env = new_environment(parent_env);")
+  ;; todo also emit a function prototype somewhere
+  (define param-list 
+    (c-param-list
+     (cons "environ *parent_env" params)))
+  (emit-code (sprintf "object* ~a(~a) {"
+                      proc_name param-list))
+  (emit-code "environ *env = new_environment(parent_env);")
+  
+  (map (lambda (param)
+         (emit-code (sprintf "add_to_environment(env, ~a, ~a);" 
+                             (c-escape (car param))
+                             (cdr param))))
+       param-names)
+                    
+    
   var_name)
 
 (define (c-end-procedure result)

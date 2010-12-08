@@ -1,0 +1,13 @@
+(define (transform-==> code)
+  (let loop ((code code)
+             (result (list)))
+    (cond ((< (length code) 3)
+           (append result code))
+          ((eq? (cadr code) (quote ==>))
+           (loop (cdddr code)
+                 (append result (list (list (quote check) 
+                                            (car code) 
+                                            (caddr code))))))
+          (else (loop (cdr code)
+                      (append result (list (car code))))))))
+           

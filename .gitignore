@@ -1,4 +1,11 @@
 scm/*
+tests/*
 !scm/*.scm
+!tests/*.scm
 *.o
+*.s
+*.i
 main
+a.out
+core
+\#*#

@@ -1,0 +1,13 @@
+(define (h)
+ (print "h says a is " a))
+
+(define (f)
+ (define a 1)
+ (print "a is " a)
+ (define (g) 
+  (print "g says a is " a) 
+  (set! a 2) 
+  (print "g says a is " a))
+ (g)
+ (h))
+(f)

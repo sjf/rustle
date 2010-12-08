@@ -162,7 +162,7 @@
 (define (main) 
   (print "hello world")
   (if (< (length (argv)) 2 )
-      (fatal_error "Usage ./compiler file.scm"))
+      (fatal-error "Usage ./compiler file.scm"))
   (define filename (cadr (argv)))
   (define c_src (replace_ext filename ".c"))
 

@@ -1,4 +1,4 @@
-(define (fatal_error s . args)
+(define (fatal-error s . args)
   (print "Error: " s)
   (if (not (null? args))
       (apply print args))

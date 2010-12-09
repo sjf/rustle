@@ -49,22 +49,32 @@
   (to-str s)
 )
 
+
 (define (c-param-list lst) (join lst ", "))
 
-(define (c-new-obj type value)
-  (define var_name (c-varname "v"))
-  (emit-code (sprintf "object *~a = new_object(~a);" 
-                      var_name type))
+(define (c-gen-true) "&true_object")
+(define (c-gen-false) "&false_object")
+(define (c-gen-none) "&none_object")
 
-  (cond ((eq? type *t_string*) 
-         (emit-code (sprintf 
-                     "obj_set_str_val(~a, ~a);" 
-                     var_name (c-escape value))))
-        ((eq? type *t_int*) 
-         (emit-code (sprintf 
-                     "~a->val.int_ = ~a;" 
-                     var_name value))))
-  var_name)
+(define (c-new-obj type value)
+  (cond ((eq? T_TRUE value) (c-gen-true))
+        ((eq? T_FALSE value) (c-gen-false))
+        ((eq? T_NONE value) (c-gen-none))
+        (else        
+         (define var_name (c-varname "v"))
+         (emit-code (sprintf "object *~a = new_object(~a);" 
+                             var_name type))
+         (case type
+           ((T_STR) 
+            (emit-code (sprintf 
+                        "obj_set_str_val(~a, ~a);" 
+                        var_name (c-escape value))))
+           ((T_INT) 
+            (emit-code (sprintf 
+                        "~a->val.int_ = ~a;" 
+                        var_name value)))
+           (else (fatal-error "New object: unsupported type:" type)))
+         var_name)))
 
 
 (define (c-add-to-symbol-table symbol var)
@@ -141,7 +151,8 @@
   (c-end-block))
 
 (define *c_start* 
-"#include <runtime.c>
+"#include <runtime.h>
+#include <builtin.h>
 void run_main();
 
 int main(int argc, char** argv) {

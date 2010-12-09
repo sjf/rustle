@@ -10,21 +10,22 @@
 (define *t_var*      (quote var))
 
 ;; these must match the constants in builtin.c
-(define *t_int*      (quote T_INT))
-(define *t_string*   (quote T_STR))
-(define *t_none*     (quote T_NONE))
-
+(define T_INT      (quote T_INT))
+(define T_STRING   (quote T_STR))
+(define T_NONE     (quote T_NONE))
+(define T_TRUE     (quote T_TRUE))
+(define T_FALSE    (quote T_FALSE))
 
 (define (type-of l) (car l))
 (define (value-of l) (caddr l))
 
 (define (gen-int-const value)     
   (list *expression* *t_var* 
-        (c-new-obj *t_int* value)))
+        (c-new-obj T_INT value)))
 
 (define (gen-string-const value)  
   (list *expression* *t_var* 
-        (c-new-obj *t_string* value)))
+        (c-new-obj T_STRING value)))
 
 (define (var-name expr)
   (caddr expr))
@@ -33,11 +34,7 @@
   (and (list? form) 
        (member? (car form) 
                 (quote (lambda let define set! quote if and or begin)))))
-
     
-(define (gen-true-false form)
-     (print "Passing.." form))
-
 (define (gen-symbol symbol)
   (cond ((eq? symbol (quote +)) (list *expression* *t_var* "add"))
         ((eq? symbol (quote -)) (list *expression* *t_var* "sub"))
@@ -97,6 +94,10 @@
   (if (not (type-pred arg))
       (fatal-error (sprintf "Unexpected type got ~a: ~a"
                             (type-of arg) function))))
+(define (gen-true)
+  (list *expression* *t_var* (c-gen-true) #t))
+(define (gen-false)
+  (list *expression* *t_var* (c-gen-false) #f))
 
 
 (define (gen-special form) 
@@ -108,7 +109,7 @@
          (define value_name (var-name (generate (cadr args))))
          (define sym_name (var-name (gen-symbol (car args))))
          (c-assign sym_name value_name)
-         (list *expression* #f *t_none*))
+         (list *expression* *t_var* (c-gen-none) #f))
          
         ((eq? val (quote define)) 
          (check-args= args 2 "define")
@@ -128,6 +129,7 @@
          (print "Generating lambda: " body)      
          (define proc (c-new-procedure formals))
          (define res (last (map generate body)))
+         (print "Result will be from " res)
          (c-end-procedure (value-of res))
          (list *procedure* #f proc))
         (else (display "Unsupported")))
@@ -138,8 +140,8 @@
   (cond ((integer? form) (gen-int-const form))
         ((string? form)  (gen-string-const form))
         ((symbol? form)  (gen-symbol form))
-        ((eq? #t form)   (gen-true-false form))
-        ((eq? #f form)   (gen-true-false form))
+        ((eq? #t form)   (gen-true))
+        ((eq? #f form)   (gen-false))
         ((special? form) (gen-special form))
         ((list? form)    (gen-fun-call form))
         (else (print "Passing.. " form)))
@@ -158,6 +160,7 @@
    "/usr/bin/gcc-4.3"
    ;(list "-I." "builtin.o" filename "-o" exec_filename)))
    (list "-g" "-Werror" "-Wshadow" "-std=c99" "-Wall" "-Wno-unused-variable" 
+         "builtin.c" "runtime.c" "-D_GNU_SOURCE"
          "-I."  filename "-o" exec_filename)))
 
 (define (main) 

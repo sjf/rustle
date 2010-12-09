@@ -1,37 +1,72 @@
+#ifndef RUNTIME_H_
+#define RUNTIME_H_
+
+#include <search.h>
+
+#define T_NONE    0
+#define T_INT     1
+#define T_STR     2
+#define T_CHAR    3
+#define T_TRUE    4
+#define T_FALSE   5
+#define T_SYM     6
+#define T_PAIR    7
+#define T_PROC    8
+#define T_EMPTYLIST 9
+#define T_REAL   10
+#define T_VECTOR 11
+
+struct object_;
+typedef struct object_ object;
+
+typedef struct environ_ {
+  struct hsearch_data table;
+  struct environ_ *parent;
+} environ;
+
+typedef struct pair_ {
+  object *car;
+  struct object_ *cdr;
+} pair;
+
+typedef struct proc_ {
+  void *func;
+  int arity;
+  environ* closure;
+  char builtin;
+} proc;
 
 
-#define FatalError(x, args...) do{fprintf(stderr," !! error at %s:%i:%s ", __FILE__,__LINE__,__FUNCTION__); \
-                                  fprintf(stderr,x, ##args); fprintf(stderr,"\n"); \
-                                  fail(); \
-                               } while(0)
+/*typedef*/ struct object_ {
+  char type;
+  union value {
+    int int_;
+    char *str;
+    char chr;
+    proc proc;
+    pair pair;
+    // others list, vector, char, t/f, symbol
+  } val;
+} /*object*/;
 
-#define FatalSysError(x, args...) do{perror(" !! error:"); \
-                                  fprintf(stderr," !! error at %s:%i:%s ", __FILE__,__LINE__,__FUNCTION__); \
-                                  fprintf(stderr,x, ##args); fprintf(stderr,"\n"); \
-                                  fail(); \
-                               } while(0)
+environ builtins;
+object none_object; 
+object true_object;
+object false_object;
 
-#define Error(x, args...) do{fprintf(stderr," ## error at %s:%i:%s ", __FILE__,__LINE__,__FUNCTION__); \
-                             fprintf(stderr,x, ##args); fprintf(stderr,"\n"); \
-                              } while(0)
-#define Warn(x, args...) do{printf(" == warning at %s:%i:%s ", __FILE__,__LINE__,__FUNCTION__); \
-                             printf(x, ##args); printf("\n"); \
-                          } while(0)
-#define Info(x, args...) do {printf(" ++ ");printf(x, ## args);printf("\n"); \
-                                                  } while (0)
-/*
-#define InfoFile(x, args...) do {printf(" ++ ");printf(x,##args);printf("\n");\
-                                 fprintf(sr->log,"%lu ",time(NULL));fprintf(sr->log,x, ## args);\
-                                 fprintf(sr->log,"\n");fflush(sr->log); } while (0)
-*/
+object *new_object(char type);
+void copy_object(object *dest, object *src);
+object *new_object_from(object *obj);
+object *new_proc_object(void *func, int arity, environ* env);
+object *new_builtin_proc(void *func, int arity);
+object *new_static_object(char type, void *value);
+void obj_set_str_val(object *obj, const char *str);
 
-#define Todo(x, args...) do {printf(" ** Todo at %s: ",__FUNCTION__);printf(x, ## args);printf("\n"); \
-                          } while (0)
-#define Fine(x, args...) do {printf("    ");printf(x, ## args);printf("\n"); \
-                          } while (0)
+environ* new_environment(environ* parent);
+void add_to_environment(environ *env, char *sym, object *obj);
+object *lookup_sym(environ* env, char *sym);
+object *call_procedure(object *obj, int arglen, ...);
+environ* setup_main_environment();
 
-#ifdef _DEBUG_
-#define fail() abort()
-#else
-#define fail() exit(1)
+
 #endif

@@ -1,17 +1,17 @@
 (define msg "hello")
-(display msg)
+(print msg)
 ;>hello
-(display " ")
+(print " ")
 ;> 
 (set! msg "world")
-(display msg)
+(print msg)
 ;> world
-(display (display "foo!"))
+(print (print "foo!"))
 ;>foo!
 ;>#No-value
-(display evil)
+(print evil)
 ;>666
-(display sunday)
+(print sunday)
 ;>#Procedure-(0 arguments)
 (sunday)
 ;>Jarvis Cocker's Sunday Service

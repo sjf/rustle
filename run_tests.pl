@@ -101,6 +101,7 @@ if ($ncomp == 0 &&
    #print BOLD, RED,  "[FAIL]", RESET " $all_failed tests failed\n";
     if ($nsucc) {
         print BOLD, GREEN,"[OK]  ", RESET " $nsucc tests succeeded\n";
+	show(@success);
     }
     if ($ncomp) {
         print BOLD, RED,  "[FAIL]", RESET " $ncomp tests failed to compile\n";

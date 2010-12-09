@@ -1,6 +1,6 @@
 (define x 42)
-(display x)
+(print x)
 ;>42
 (set! x 13)
-(display x)
+(print x)
 ;>13

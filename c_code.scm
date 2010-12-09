@@ -52,9 +52,9 @@
 
 (define (c-param-list lst) (join lst ", "))
 
-(define (c-gen-true) "&true_object")
-(define (c-gen-false) "&false_object")
-(define (c-gen-none) "&none_object")
+(define (c-gen-true) "(&true_object)")
+(define (c-gen-false)"(&false_object)")
+(define (c-gen-none) "(&none_object)")
 
 (define (c-new-obj type value)
   (cond ((eq? T_TRUE value) (c-gen-true))
@@ -149,6 +149,18 @@
   (emit-code (sprintf "return ~a;" result))
   (emit-code "}")
   (c-end-block))
+
+(define (c-if test)
+  (define res_name (c-varname "if_res"))
+  (emit-code (sprintf "object *~a;" res_name))
+  (emit-code (sprintf "if (~a->type != T_FALSE) {" test))
+  res_name)
+(define (c-else res_name block_result)
+  (emit-code (sprintf "~a = ~a;" res_name block_result))
+  (emit-code "} else {"))
+(define (c-endif res_name block_result)
+  (emit-code (sprintf "~a = ~a;" res_name block_result))
+  (emit-code "}"))
 
 (define *c_start* 
 "#include <runtime.h>

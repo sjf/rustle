@@ -36,6 +36,7 @@
                 (quote (lambda let define set! quote if and or begin)))))
     
 (define (gen-symbol symbol)
+;; put all these references in the symbol table
   (cond ((eq? symbol (quote +)) (list *expression* *t_var* "add"))
         ((eq? symbol (quote -)) (list *expression* *t_var* "sub"))
         ((eq? symbol (quote *)) (list *expression* *t_var* "mul"))
@@ -104,6 +105,7 @@
   (define val (car form))
   (define args (cdr form))
   (cond ((eq? val (quote set!))
+         ;; some compile time checking for special forms
          (check-args= args 2 "set!")
          (check-type (car args) symbol? "set!")
          (define value_name (var-name (generate (cadr args))))
@@ -140,9 +142,9 @@
          (define false_expr (caddr args))
          (define res (c-if (value-of (generate pred))))
          (c-else res (value-of (generate true_expr)))
-         (c-endif res (value-of (generate false_expr))))
+         (c-endif res (value-of (generate false_expr)))
          (list *expression* *t_var* res))
-        (else (display "Unsupported")))
+        (else (display "Unsupported"))))
   
 
 (define (generate form)
@@ -165,20 +167,28 @@
   #t)
 
 (define (compile filename)
-  (define exec_filename (replace_ext filename ""))
+  (define exec_filename (replace_ext! filename ""))
   (process-execute 
-   "/usr/bin/gcc-4.3"
-   ;(list "-I." "builtin.o" filename "-o" exec_filename)))
-   (list "-g" "-Werror" "-Wshadow" "-std=c99" "-Wall" "-Wno-unused-variable" 
-         "builtin.c" "runtime.c" "-D_GNU_SOURCE"
-         "-I."  filename "-o" exec_filename)))
+   "gcc"
+   (list "-g" 
+         "-Werror" 
+         "-Wshadow" 
+         "-std=c99" 
+         "-Wall" 
+         "-Wno-unused-variable" 
+         "builtin.c" 
+         "runtime.c" 
+         "-D_GNU_SOURCE" 
+         "-v"
+         "-I."  filename 
+         "-o" exec_filename)))
 
 (define (main) 
   (print "hello world")
   (if (< (length (argv)) 2 )
       (fatal-error "Usage ./compiler file.scm"))
   (define filename (cadr (argv)))
-  (define c_src (replace_ext filename ".c"))
+  (define c_src (replace_ext! filename ".c"))
 
   ;; Parse the file
   (define src (read_all filename))
@@ -190,6 +200,5 @@
   ;; Call gcc
   (compile c_src)
   )
-      
+;(trace main)      
 (main)
-

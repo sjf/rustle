@@ -1,12 +1,16 @@
+;; String functions
+
 (define (string-empty? s)
   (eq? (string-length s) 0))
 
 (define (string-at s i)
   (substring s i (+ i 1)))
 
+;; Slice to the end of the string
 (define (string-slice1 s start)
   (substring s start (string-length s)))
 
+;; Index of character c in string s
 (define (string-index s c)
   (let loop ((pos 0))
     (cond ((>= pos (string-length s)) -1)
@@ -19,7 +23,7 @@
              (res ""))
     (cond 
      ((null? strs) res)
-     ((single strs) (string-append res (car strs)))
+     ((single? strs) (string-append res (car strs)))
      (else (loop (cdr strs)
                  (string-append 
                   (string-append res (car strs)) sep))))))

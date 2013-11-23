@@ -36,8 +36,7 @@ typedef struct proc_ {
   char builtin;
 } proc;
 
-
-/*typedef*/ struct object_ {
+struct object_ {
   char type;
   union value {
     int int_;
@@ -47,7 +46,7 @@ typedef struct proc_ {
     pair pair;
     // others list, vector, char, t/f, symbol
   } val;
-} /*object*/;
+};
 
 // Singleton objects
 environ builtins;
@@ -56,18 +55,17 @@ object true_object;
 object false_object;
 
 object *new_object(char type);
-void copy_object(object *dest, object *src);
 object *new_object_from(object *obj);
 object *new_proc_object(void *func, int arity, environ* env);
 object *new_builtin_proc(void *func, int arity);
 object *new_static_object(char type, void *value);
 void obj_set_str_val(object *obj, const char *str);
+void copy_object(object *dest, object *src);
 
 environ* new_environment(environ* parent);
 void add_to_environment(environ *env, char *sym, object *obj);
 object *lookup_sym(environ* env, char *sym);
 object *call_procedure(object *obj, int arglen, ...);
 environ* setup_main_environment();
-
 
 #endif

@@ -55,7 +55,7 @@ object *new_static_object(char type, void *value){
     break;
   case T_PROC:
     //res->val.proc = *((proc *)value);
-    //break;
+    break;
   default:
     FatalError("Unsupported type: %d", type);
   }

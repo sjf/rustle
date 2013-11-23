@@ -64,7 +64,7 @@ for my $scm_file (@scm_files) {
     #print "@results\n";
     #print "@expected\n";
     for (my $i = 0; $i <= $#expected; $i++) {
-        if ($expected[$i] ne $results[$i]) {
+        if ($results[$i] && $expected[$i] ne $results[$i]) {
             print BOLD, YELLOW, "$scm_file: line $i\n", RESET;
             for (my $j = 0; $j < $i; $j++) {
                 print "$results[$j]\n";

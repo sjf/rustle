@@ -5,6 +5,9 @@
       (apply print args))
   (exit 1))
 
+(define (debug-log s . args)
+  (print-stderr (sprintf "II ~a~a~%" s (join args ""))))
+
 ;;; IO Functions 
 (define (read_all filename)
   (let loop ((port (open-input-file filename))
@@ -20,6 +23,9 @@
       (string-append filename ext)
       (string-append (substring filename 0 ind) ext)))
 
+(define (print-stderr s)
+  (format (current-error-port) "~a" s))
+
 ;;; List Functions
 (define (member? lst x)
   (not (eq? (member lst x) #f)))
@@ -30,15 +36,13 @@
 (define (single? lst)
   (eq? 1 (length lst)))
 
-;;; Missing scheme functions
+;;; Some missing scheme functions
 (define (repeat what times)
   (let loop ((res (list))
              (n times))
     (if (<= n 0)
         res
         (loop (cons what res) (- n 1)))))
-
-;(define print (lambda (x) (display x) (display "\n")))
 
 (define (inc! x) 
   (set! x (+ x 1)))

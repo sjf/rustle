@@ -128,10 +128,10 @@
                      (lambda (x) (or (list? x)
                                      (symbol? x))) "lambda")
          ;(define 
-         (print "Generating lambda: " body)      
+         (debug-log "Generating lambda: " body)      
          (define proc (c-new-procedure formals))
          (define res (last (map generate body)))
-         (print "Result will be from " res)
+         (debug-log "Result will be from " res)
          (c-end-procedure (value-of res))
          (list *procedure* #f proc))
 
@@ -148,7 +148,7 @@
   
 
 (define (generate form)
-  (print "Generating: " form " " (type form))
+  (debug-log "Generating: " form " " (type form))
   (cond ((integer? form) (gen-int-const form))
         ((string? form)  (gen-string-const form))
         ((symbol? form)  (gen-symbol form))
@@ -156,7 +156,7 @@
         ((eq? #f form)   (gen-false))
         ((special? form) (gen-special form))
         ((list? form)    (gen-fun-call form))
-        (else (print "Passing.. " form)))
+        (else (debug-log "Passing.. " form)))
 )
 
 (define (generate-code src)
@@ -177,14 +177,15 @@
          "-Wall" 
          "-Wno-unused-variable" 
          "builtin.c" 
-         "runtime.c" 
+         "runtime.c"
+         "base.c" 
          "-D_GNU_SOURCE" 
-         "-v"
+         ;"-v"
          "-I."  filename 
          "-o" exec_filename)))
 
 (define (main) 
-  (print "hello world")
+  (debug-log "Rustle Scheme to C Compiler 0.0")
   (if (< (length (argv)) 2 )
       (fatal-error "Usage ./compiler file.scm"))
   (define filename (cadr (argv)))

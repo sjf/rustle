@@ -2,12 +2,11 @@
 (define *blocks* (list))
 
 (define (emit-code codes)
-  (print "EMIT: " codes)
-  (if (list? codes)
-      (set! (car *blocks*) 
-            (append (car *blocks*) codes))
-      (set! (car *blocks*) 
-            (append (car *blocks*) (list codes)))))
+  (debug-log "EMIT: " codes)
+  (if (not (list? codes))
+      (set! codes (list codes)))
+  (set! (car *blocks*) 
+        (append (car *blocks*) codes)))
 
 (define (c-new-block) 
   (set! *blocks* (cons (list) *blocks*)))

@@ -1,0 +1,5 @@
+A scheme to C compiler, written in scheme. The aim is eventually to have a self hosting compiler. 
+I am working from R4RS.
+
+Compile with Chicken Scheme:
+csc main.scm

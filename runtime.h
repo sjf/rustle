@@ -49,6 +49,7 @@ typedef struct proc_ {
   } val;
 } /*object*/;
 
+// Singleton objects
 environ builtins;
 object none_object; 
 object true_object;

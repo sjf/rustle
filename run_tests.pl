@@ -52,6 +52,7 @@ for my $scm_file (@scm_files) {
         system("cat /tmp/run_tests.out");
         if ($should_error) {
             print BOLD,YELLOW,"Expected to fail\n",RESET;
+            pop(@run_fail);
         }
         next;
     }

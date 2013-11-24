@@ -140,8 +140,6 @@
                              (c-escape (car param))
                              (cdr param))))
        param-names)
-                    
-    
   var_name)
 
 (define (c-end-procedure result)
@@ -185,3 +183,22 @@ int main(int argc, char** argv) {
   (display *c_end* port)
   (close-output-port port))
 
+
+(define (c-compile filename)
+  (define exec_filename (replace_ext! filename ""))
+  (process-execute 
+   "gcc"
+   (list "-g" 
+         "-Werror" 
+         "-Wshadow" 
+         "-std=c99" 
+         "-Wall" 
+         "-Wno-unused-variable" 
+         "-Wno-error=unused-but-set-variable"
+         "builtin.c" 
+         "runtime.c"
+         "base.c" 
+         "-D_GNU_SOURCE" 
+         ;"-v"
+         "-I."  filename 
+         "-o" exec_filename)))

@@ -166,24 +166,6 @@
   (c-end-main)
   #t)
 
-(define (compile filename)
-  (define exec_filename (replace_ext! filename ""))
-  (process-execute 
-   "gcc"
-   (list "-g" 
-         "-Werror" 
-         "-Wshadow" 
-         "-std=c99" 
-         "-Wall" 
-         "-Wno-unused-variable" 
-         "builtin.c" 
-         "runtime.c"
-         "base.c" 
-         "-D_GNU_SOURCE" 
-         ;"-v"
-         "-I."  filename 
-         "-o" exec_filename)))
-
 (define (main) 
   (debug-log "Rustle Scheme to C Compiler 0.0")
   (if (< (length (argv)) 2 )
@@ -199,7 +181,7 @@
   (generate-code src)
   (c-write-src-file c_src)
   ;; Call gcc
-  (compile c_src)
+  (c-compile c_src)
   )
 ;(trace main)      
 (main)

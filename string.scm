@@ -11,12 +11,20 @@
   (substring s start (string-length s)))
 
 ;; Index of character c in string s
-(define (string-index s c)
-  (let loop ((pos 0))
-    (cond ((>= pos (string-length s)) -1)
-          ((equal? c (string-at s pos)) pos)
-          (else (loop (+ pos 1))))))
+;; Provided by chicken
+;; (define (string-index s c)
+;;   (let loop ((pos 0))
+;;     (cond ((>= pos (string-length s)) -1)
+;;           ((equal? c (string-at s pos)) pos)
+;;           (else (loop (+ pos 1))))))
 
+;; (define (string-rindex s c) 
+;;   (let loop ((pos (- (string-length s) 1)))
+;;     (cond ((< 0 pos) -1)
+;;           ((equal? c (string-at s pos) pos))
+;;           (else (loop (- pos 1))))))
+           
+    
 (define (join lst sep)
   (define strs (map to-str lst))
   (let loop ((strs strs)

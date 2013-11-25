@@ -2,7 +2,6 @@
 (require 'string)
 (require 'util)
 (require 'c_code)
-(require 'testing)
 
 ;; some constants
 (define *expression* (quote expression))
@@ -34,6 +33,11 @@
   (list *expression* *t_var*
         (c-new-obj T_SYMBOL value)))
 
+(define (gen-null-const)
+  ;; TODO use static const null object like t/f
+  (list *expression* *t_var*
+        (c-new-obj T_PAIR (list 0 0))))
+
 ;; Data constants
 (define (gen-pair-const value)
   (define a (gen-define (car value)))
@@ -52,18 +56,18 @@
         ((symbol? form)  (gen-symbol-const form))
         ((eq? #t form)   (gen-true))
         ((eq? #f form)   (gen-false))
+        ((null? form)    (gen-null-const))
         ((pair? form)    (gen-pair-const form))
-        (else (debug-log "Passing.. " form))))
+        (else (fatal-error "gen-define unimplemented:" form))))
 
 ;;
-
-
 
 (define (var-name expr)
   (caddr expr))
 
 (define (special? form)
-  (and (list? form) 
+  (and (list? form)
+       (not (null? form))
        (member? (car form) 
                 (quote (lambda let define set! quote if and or begin)))))
     
@@ -93,12 +97,13 @@
 (define (type-of x)
   (cond ((string? x) "string")
         ((number? x) "number")
-        ((special? x) "special-form")
         ((symbol? x) "symbol")
-        ((pair? x)   "pair")
         ((eq? #t x)  "#t")
         ((eq? #f x)  "#f")
-        ((char? x)   "char")))
+        ((char? x)   "char")        
+        ((null? x)   "empty-list")
+        ((special? x) "special-form")
+        ((pair? x)   "pair")))
 
 (define (gen-fun-call form)
   (define lst (map generate form))
@@ -189,6 +194,7 @@
         ((symbol? form)  (gen-symbol form))
         ((eq? #t form)   (gen-true))
         ((eq? #f form)   (gen-false))
+        ;; todo generate empty list
         ((special? form) (gen-special form))
         ((list? form)    (gen-fun-call form))
         (else (debug-log "Passing.. " form)))
@@ -210,7 +216,7 @@
 
   ;; Parse the file
   (define src (read_all filename))
-  (set! src (transform-==> src))
+  ;(set! src (transform-==> src))
 
   ;; Generate code
   (generate-code src)

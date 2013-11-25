@@ -1,7 +1,8 @@
 ;;; Logging
 (define (fatal-error mesg . args)
   (print-call-chain (current-error-port))
-  (print-stderr (format "EE Error: ~a ~a~%" mesg (join args " "))))
+  (print-stderr (format "EE Error: ~a ~a~%" mesg (join args " ")))
+  (exit 1))
 
 
 (define (debug-log mesg . args)
@@ -21,7 +22,7 @@
         (loop port (cons x src)))))
 
 (define (replace_ext! filename ext)
-  (define ind (string-index filename "."))
+  (define ind (string-index-right filename #\.))
   (if (eq? ind -1)
       (string-append filename ext)
       (string-append (substring filename 0 ind) ext)))

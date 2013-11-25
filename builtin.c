@@ -34,11 +34,16 @@ object *display(object *obj) {
     printf("#Procedure-(%d arguments)", obj->val.proc.arity);
     break;
   case T_PAIR:
-    printf("(");
-    display(obj->val.pair.car);
-    printf(" . ");
-    display(obj->val.pair.cdr);
-    printf(")");
+    if ((obj->val.pair.car == NULL) &&
+        (obj->val.pair.cdr == NULL)) {
+      printf("()");
+    } else {
+      printf("(");
+      display(obj->val.pair.car);
+      printf(" . ");
+      display(obj->val.pair.cdr);
+      printf(")");
+    }
     break;
   default:
     FatalError("Unsupported type: %i", obj->type);

@@ -10,7 +10,6 @@
 #include <builtin.h>
 #include <base.h>
 
-
 object *new_object(char type) {
   object *res = malloc(sizeof(object));
   bzero(res,sizeof(object));
@@ -37,10 +36,23 @@ object *new_proc_object(void *func, int arity, environ* env){
 }
 
 void obj_set_str_val(object *obj, const char *str) {
-  size_t size = strlen(str) * sizeof(char);
+  size_t size = (strlen(str) + 1) * sizeof(char);
+  free(obj->val.str);
   obj->val.str = malloc(size);
   memcpy(obj->val.str, str, size);
 }
+
+void obj_set_pair_val(object *obj, object *a, object *b) {
+  obj->val.pair.car = a;
+  obj->val.pair.cdr = b;
+}
+
+void obj_set_sym_val(object *obj, const char *sym) {
+  size_t size = (strlen(sym) + 1) * sizeof(char);
+  free(obj->val.sym);
+  obj->val.sym = malloc(size);
+  memcpy(obj->val.sym, sym, size);
+} 
 
 object *new_static_object(char type, void *value){
   object *res = malloc(sizeof(object));;
@@ -50,7 +62,7 @@ object *new_static_object(char type, void *value){
   case T_INT:
     res->val.int_ = *((int *)value);
     break;
-  case T_STR:
+  case T_STRING:
     res->val.str = value;
     break;
   case T_PROC:

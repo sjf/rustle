@@ -19,7 +19,7 @@ my @success;
 for my $scm_file (@scm_files) {
     print BOLD, "Running: '$scm_file'\n",RESET;
     # compile
-    if (system("./main $scm_file &>/tmp/compile_out") != 0) {
+    if (system("./main $scm_file 2>&1 &>/tmp/compile_out") != 0) {
         push(@compile_fail,$scm_file);
         print BOLD, YELLOW, "$scm_file:\n", RESET;
         system("cat /tmp/compile_out");
@@ -44,7 +44,7 @@ for my $scm_file (@scm_files) {
     # run
     my $exec_file = $scm_file;
     $exec_file =~ s/\.scm$//;
-    my $res = system("./$exec_file &> /tmp/run_tests.out");
+    my $res = system("./$exec_file 2>&1 &> /tmp/run_tests.out");
     if (($res != 0 && !$should_error) ||
         ($res == 0 && $should_error)){        
         push(@run_fail, $scm_file);

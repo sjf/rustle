@@ -5,11 +5,11 @@
 
 #define T_NONE    0
 #define T_INT     1
-#define T_STR     2
+#define T_STRING  2
 #define T_CHAR    3
 #define T_TRUE    4
 #define T_FALSE   5
-#define T_SYM     6
+#define T_SYMBOL  6
 #define T_PAIR    7
 #define T_PROC    8
 #define T_EMPTYLIST 9
@@ -41,10 +41,11 @@ struct object_ {
   union value {
     int int_;
     char *str;
+    char *sym;
     char chr;
     proc proc;
     pair pair;
-    // others list, vector, char, t/f, symbol
+    // others list, vector, char, t/f
   } val;
 };
 
@@ -59,13 +60,18 @@ object *new_object_from(object *obj);
 object *new_proc_object(void *func, int arity, environ* env);
 object *new_builtin_proc(void *func, int arity);
 object *new_static_object(char type, void *value);
+
 void obj_set_str_val(object *obj, const char *str);
+void obj_set_sym_val(object *obj, const char *sym);
+void obj_set_pair_val(object *obj, object *a, object *b);
+
 void copy_object(object *dest, object *src);
 
+environ* setup_main_environment();
 environ* new_environment(environ* parent);
 void add_to_environment(environ *env, char *sym, object *obj);
 object *lookup_sym(environ* env, char *sym);
+
 object *call_procedure(object *obj, int arglen, ...);
-environ* setup_main_environment();
 
 #endif

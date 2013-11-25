@@ -1,12 +1,15 @@
 ;;; Logging
-(define (fatal-error s . args)
-  (print "Error: " s)
-  (if (not (null? args))
-      (apply print args))
-  (exit 1))
+(define (fatal-error mesg . args)
+  (print-call-chain (current-error-port))
+  (print-stderr (format "EE Error: ~a ~a~%" mesg (join args " "))))
 
-(define (debug-log s . args)
-  (print-stderr (sprintf "II ~a~a~%" s (join args ""))))
+
+(define (debug-log mesg . args)
+  (print-stderr (sprintf "II ~a ~a~%" mesg (join args " "))))
+
+(define (todo)
+  (print-call-chain (current-error-port))
+  (print-stderr (sprintf "EE TODO Error")))
 
 ;;; IO Functions 
 (define (read_all filename)
@@ -44,5 +47,5 @@
         res
         (loop (cons what res) (- n 1)))))
 
-(define (inc! x) 
-  (set! x (+ x 1)))
+(define (inc x) 
+  (+ x 1))

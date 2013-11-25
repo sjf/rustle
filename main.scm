@@ -11,14 +11,17 @@
 
 ;; these must match the constants in builtin.c
 (define T_INT      (quote T_INT))
-(define T_STRING   (quote T_STR))
+(define T_STRING   (quote T_STRING))
+(define T_SYMBOL   (quote T_SYMBOL))
 (define T_NONE     (quote T_NONE))
 (define T_TRUE     (quote T_TRUE))
 (define T_FALSE    (quote T_FALSE))
+(define T_PAIR     (quote T_PAIR))
 
-(define (type-of l) (car l))
-(define (value-of l) (caddr l))
+(define (ir-type-of l) (car l))
+(define (ir-value-of l) (caddr l))
 
+;; Primitive values
 (define (gen-int-const value)     
   (list *expression* *t_var* 
         (c-new-obj T_INT value)))
@@ -26,6 +29,35 @@
 (define (gen-string-const value)  
   (list *expression* *t_var* 
         (c-new-obj T_STRING value)))
+
+(define (gen-symbol-const value)
+  (list *expression* *t_var*
+        (c-new-obj T_SYMBOL value)))
+
+;; Data constants
+(define (gen-pair-const value)
+  (define a (gen-define (car value)))
+  (define b (gen-define (cdr value)))
+  (list *expression* *t_var*
+        (c-new-obj T_PAIR (list (ir-value-of a)
+                                (ir-value-of b)))))
+
+(define (gen-vector-cons value)
+  (todo))
+
+(define (gen-define form)
+  (debug-log "Generating Data: " form  (type-of form))
+  (cond ((integer? form) (gen-int-const form))
+        ((string? form)  (gen-string-const form))
+        ((symbol? form)  (gen-symbol-const form))
+        ((eq? #t form)   (gen-true))
+        ((eq? #f form)   (gen-false))
+        ((pair? form)    (gen-pair-const form))
+        (else (debug-log "Passing.. " form))))
+
+;;
+
+
 
 (define (var-name expr)
   (caddr expr))
@@ -36,7 +68,7 @@
                 (quote (lambda let define set! quote if and or begin)))))
     
 (define (gen-symbol symbol)
-;; put all these references in the symbol table
+;; TODO put all these references in the symbol table
   (cond ((eq? symbol (quote +)) (list *expression* *t_var* "add"))
         ((eq? symbol (quote -)) (list *expression* *t_var* "sub"))
         ((eq? symbol (quote *)) (list *expression* *t_var* "mul"))
@@ -58,12 +90,12 @@
 ; let, do loops
 ; 
 
-(define (type x)
+(define (type-of x)
   (cond ((string? x) "string")
         ((number? x) "number")
         ((special? x) "special-form")
         ((symbol? x) "symbol")
-        ((list? x)   "list")
+        ((pair? x)   "pair")
         ((eq? #t x)  "#t")
         ((eq? #f x)  "#f")
         ((char? x)   "char")))
@@ -73,11 +105,11 @@
   (if (null? lst)
       (fatal-error "Cannot call empty list"))
   (define func (car lst))
-  (if (not (eq? *expression* (type-of func)))
+  (if (not (eq? *expression* (ir-type-of func)))
       (fatal-error "Cannot call " (write func)))
-  (define args (map value-of (cdr lst)))
+  (define args (map ir-value-of (cdr lst)))
   (define res_name 
-    (c-call-function (value-of func) args))  
+    (c-call-function (ir-value-of func) args))  
   (list *expression* *t_var* res_name))
 
 (define (check-args= args expected-len function)
@@ -132,7 +164,7 @@
          (define proc (c-new-procedure formals))
          (define res (last (map generate body)))
          (debug-log "Result will be from " res)
-         (c-end-procedure (value-of res))
+         (c-end-procedure (ir-value-of res))
          (list *procedure* #f proc))
 
         ((eq? val (quote if))
@@ -140,15 +172,18 @@
          (define pred (car args))
          (define true_expr (cadr args))
          (define false_expr (caddr args))
-         (define res (c-if (value-of (generate pred))))
-         (c-else res (value-of (generate true_expr)))
-         (c-endif res (value-of (generate false_expr)))
+         (define res (c-if (ir-value-of (generate pred))))
+         (c-else res (ir-value-of (generate true_expr)))
+         (c-endif res (ir-value-of (generate false_expr)))
          (list *expression* *t_var* res))
-        (else (display "Unsupported"))))
+        ((eq? val (quote quote))
+         (check-args= args 1 "quote")
+         (gen-define (car args)))
+        (else (fatal-error "Unsupported special form: " val))))
   
 
 (define (generate form)
-  (debug-log "Generating: " form " " (type form))
+  (debug-log "Generating: " form " " (type-of form))
   (cond ((integer? form) (gen-int-const form))
         ((string? form)  (gen-string-const form))
         ((symbol? form)  (gen-symbol form))

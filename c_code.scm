@@ -14,20 +14,18 @@
   (set! *src* (append *src* (car *blocks*)))
   (set! *blocks* (cdr *blocks*)))
 
-(define (add1 x) (+ x 1))
-
 (define _var-count 0)
 (define (c-varname prefix)
-  (set! _var-count (add1 _var-count))
+  (set! _var-count (inc _var-count))
   (string-append prefix "_" (number->string _var-count)))
 
 (define _proc-count 0)
 (define (c-procname)
-  (set! _proc-count (add1 _proc-count))
+  (set! _proc-count (inc _proc-count))
   (string-append "proc_" (number->string _proc-count)))
   
 (define (c-param-name arg)
-  (set! _var-count (add1 _var-count))
+  (set! _var-count (inc _var-count))
   (string-append 
    (c-ident arg) "_" (number->string _var-count)))
                
@@ -59,19 +57,29 @@
   (cond ((eq? T_TRUE value) (c-gen-true))
         ((eq? T_FALSE value) (c-gen-false))
         ((eq? T_NONE value) (c-gen-none))
-        (else        
+        (else
          (define var_name (c-varname "v"))
          (emit-code (sprintf "object *~a = new_object(~a);" 
                              var_name type))
          (case type
-           ((T_STR) 
-            (emit-code (sprintf 
-                        "obj_set_str_val(~a, ~a);" 
-                        var_name (c-escape value))))
            ((T_INT) 
             (emit-code (sprintf 
                         "~a->val.int_ = ~a;" 
                         var_name value)))
+           ((T_SYMBOL)
+            (emit-code (sprintf
+                        "obj_set_sym_val(~a, ~a);"
+                        var_name (c-escape value))))
+           ((T_STRING) 
+            (emit-code (sprintf 
+                        "obj_set_str_val(~a, ~a);" 
+                        var_name (c-escape value))))
+           ((T_PAIR)
+             (emit-code (sprintf 
+                         "obj_set_pair_val(~a, ~a, ~a);"
+                         var_name
+                         (car value)
+                         (cadr value))))
            (else (fatal-error "New object: unsupported type:" type)))
          var_name)))
 

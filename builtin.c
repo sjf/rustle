@@ -15,8 +15,11 @@ object *display(object *obj) {
   case T_INT:
     printf("%i", obj->val.int_);
     break;
-  case T_STR:
+  case T_STRING:
     printf("%s", obj->val.str);
+    break;
+  case T_SYMBOL:
+    printf("%s", obj->val.sym);
     break;
   case T_CHAR:
     printf("%c", obj->val.chr);
@@ -71,7 +74,7 @@ object *cons(object *a, object *b) {
   return res;
 }
 
-object *symbolp(object *a) { return type_eq(a, T_SYM);}
+object *symbolp(object *a) { return type_eq(a, T_SYMBOL);}
 object *charp(object *a) { return type_eq(a, T_CHAR);}
 object *vectorp(object *a) { return type_eq(a, T_VECTOR);}
 object *pairp(object *a) { return type_eq(a, T_PAIR);}

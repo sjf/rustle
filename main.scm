@@ -18,32 +18,37 @@
 (define T_PAIR     (quote T_PAIR))
 (define T_NULL     (quote T_NULL))
 
-(define (ir-type-of l) (car l))
+;(define (ir-new-expression value))
+;(define (ir-new-procedure address result))
+(define (ir-new type value . const_value)
+  ;; Simple intermediate representation
+  ;; Has a type, which should be expression or procedure
+  ;; And a value, which is the C variable name or address
+  ;; of the value.
+  ;; Optional const_value for constants, will be used later for 
+  ;; optimisation
+  (list 'IR type value (car-or-null const_value)))
+(define (ir-type-of l) (cadr l))
 (define (ir-value-of l) (caddr l))
 
 ;; Primitive values
-(define (gen-int-const value)     
-  (list *expression* *t_var* 
-        (c-new-obj T_INT value)))
+(define (gen-int-const value)
+  (ir-new *expression* (c-new-obj T_INT value)))
 
 (define (gen-string-const value)  
-  (list *expression* *t_var* 
-        (c-new-obj T_STRING value)))
+  (ir-new *expression* (c-new-obj T_STRING value)))
 
 (define (gen-symbol-const value)
-  (list *expression* *t_var*
-        (c-new-obj T_SYMBOL value)))
+  (ir-new *expression* (c-new-obj T_SYMBOL value)))
 
 (define (gen-null-const)
-  ;; TODO use static const null object like t/f
-  (list *expression* *t_var*
-        (c-new-obj T_NULL 'unused)))
+  (ir-new *expression* (c-new-obj T_NULL 'unused)))
 
 ;; Data constants
 (define (gen-pair-const value)
   (define a (gen-define (car value)))
   (define b (gen-define (cdr value)))
-  (list *expression* *t_var*
+  (ir-new *expression* 
         (c-new-obj T_PAIR (list (ir-value-of a)
                                 (ir-value-of b)))))
 
@@ -73,8 +78,7 @@
                 (quote (lambda let define set! quote if and or begin)))))
     
 (define (gen-symbol symbol)
-  (define var_name (c-lookup-symbol-table symbol))
-  (list *expression* *t_var* var_name))
+  (ir-new *expression* (c-lookup-symbol-table symbol)))
              
 ; special forms:
 ; lambda
@@ -104,12 +108,12 @@
   (if (null? lst)
       (fatal-error "Cannot call empty list"))
   (define func (car lst))
-  (if (not (eq? *expression* (ir-type-of func)))
-      (fatal-error "Cannot call " (write func)))
+  ;(if (not (eq? *procedure* (ir-type-of func)))
+  ;    (fatal-error "Cannot call" func))
   (define args (map ir-value-of (cdr lst)))
   (define res_name 
     (c-call-function (ir-value-of func) args))  
-  (list *expression* *t_var* res_name))
+  (ir-new *expression* res_name))
 
 (define (check-args= args expected-len function)
   (if (not (eq? expected-len (length args)))
@@ -127,9 +131,9 @@
       (fatal-error (sprintf "Unexpected type got ~a: ~a"
                             (type-of arg) function))))
 (define (gen-true)
-  (list *expression* *t_var* (c-gen-true) #t))
+  (ir-new *expression* (c-gen-true) #t))
 (define (gen-false)
-  (list *expression* *t_var* (c-gen-false) #f))
+  (ir-new *expression* (c-gen-false) #f))
 
 
 (define (gen-special form) 
@@ -142,7 +146,7 @@
          (define value_name (var-name (generate (cadr args))))
          (define sym_name (var-name (gen-symbol (car args))))
          (c-assign sym_name value_name)
-         (list *expression* *t_var* (c-gen-none) #f))
+         (ir-new *expression* (c-gen-none) #f))
          
         ((eq? val (quote define)) 
          (check-args= args 2 "define")
@@ -158,13 +162,12 @@
          (check-type formals 
                      (lambda (x) (or (list? x)
                                      (symbol? x))) "lambda")
-         ;(define 
          (debug-log "Generating lambda: " body)      
          (define proc (c-new-procedure formals))
          (define res (last (map generate body)))
-         (debug-log "Result will be from " res)
+         ; Return value will be available in res
          (c-end-procedure (ir-value-of res))
-         (list *procedure* #f proc))
+         (ir-new *procedure* proc))
 
         ((eq? val (quote if))
          (check-args= args 3 "if")
@@ -174,7 +177,7 @@
          (define res (c-if (ir-value-of (generate pred))))
          (c-else res (ir-value-of (generate true_expr)))
          (c-endif res (ir-value-of (generate false_expr)))
-         (list *expression* *t_var* res))
+         (ir-new *expression* res))
         ((eq? val (quote quote))
          (check-args= args 1 "quote")
          (gen-define (car args)))

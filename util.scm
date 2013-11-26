@@ -4,7 +4,6 @@
   (print-stderr (format "EE Error: ~a ~a~%" mesg (join args " ")))
   (exit 1))
 
-
 (define (debug-log mesg . args)
   (print-stderr (sprintf "II ~a ~a~%" mesg (join args " "))))
 
@@ -40,6 +39,9 @@
 (define (single? lst)
   (eq? 1 (length lst)))
 
+(define (car-or-null lst)
+  (if (null? lst) lst
+      (car lst)))
 ;;; Some missing scheme functions
 (define (repeat what times)
   (let loop ((res (list))

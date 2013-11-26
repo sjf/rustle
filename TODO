@@ -1,0 +1,12 @@
+Big todos:
+Tall call optimisation
+Avoid using the C stack, replace function call with a goto to the head of the function
+
+Memory management:
+Using tracing.
+
+Call/cc: 
+all variables have to be stored in the heap, not in the stack, or my own implementation of a stack.
+
+Debugging help
+Keep an auxilary stack trace with the original names+line numbers of the scheme functions

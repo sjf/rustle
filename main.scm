@@ -73,15 +73,8 @@
                 (quote (lambda let define set! quote if and or begin)))))
     
 (define (gen-symbol symbol)
-;; TODO put all these references in the symbol table
-  (cond ((eq? symbol (quote +)) (list *expression* *t_var* "add"))
-        ((eq? symbol (quote -)) (list *expression* *t_var* "sub"))
-        ((eq? symbol (quote *)) (list *expression* *t_var* "mul"))
-        ((eq? symbol (quote /)) (list *expression* *t_var* "divv"))
-        ;((eq? symbol (quote display)) (list *expression* *t_var* "display"))
-        (else (define var_name (c-lookup-symbol-table symbol))
-              (list *expression* *t_var* var_name)))
-  )
+  (define var_name (c-lookup-symbol-table symbol))
+  (list *expression* *t_var* var_name))
              
 ; special forms:
 ; lambda

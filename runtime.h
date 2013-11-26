@@ -16,6 +16,11 @@
 #define T_REAL   10
 #define T_VECTOR 11
 
+static const char *TYPE_NAME[] = 
+{"none/unspecified", "integer", "string", "char",
+ "true", "false", "symbol", "pair",
+ "procedure", "null/empty list", "real", "vector"};
+
 struct object_;
 typedef struct object_ object;
 
@@ -40,6 +45,7 @@ struct object_ {
   char type;
   union value {
     int int_;
+    double real;
     char *str;
     char *sym;
     char chr;

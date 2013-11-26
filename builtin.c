@@ -110,15 +110,60 @@ object *print(object *obj) {
   return &none_object;
 }
 
-object* add(object* a, object* b){ 
-  //return a+b;
-  Todo("Add");
-  return NULL;
+const char* type_name(object *a) {
+  return TYPE_NAME[(int)a->type];
 }
 
-int sub(int a, int b){ return a-b; }
-int mul(int a, int b){ return a*b; }
-int divv(int a, int b){ return a/b; }
+double number_value(object *a) {
+  if (a->type == T_INT) {
+    return a->val.int_;
+  } else if (a->type == T_REAL) {
+    return a->val.real;
+  } 
+  FatalError("Unsupported numberical type: %s", type_name(a));
+}
+
+object* __add(object* a, object* b){ 
+  if (!true(__numberp(a)) || !true(__numberp(b))) {
+    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
+  }
+  if (a->type == T_INT && b->type == T_INT) {
+    object *res = new_object(T_INT);
+    res->val.int_ = a->val.int_ + b->val.int_;
+    return res;
+  } 
+  object *res = new_object(T_REAL);
+  res->val.real = number_value(a) + number_value(b);;
+  return res;
+}
+
+object* __sub(object* a, object* b){ 
+  if (!true(__numberp(a)) || !true(__numberp(b))) {
+    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
+  }
+  if (a->type == T_INT && b->type == T_INT) {
+    object *res = new_object(T_INT);
+    res->val.int_ = a->val.int_ - b->val.int_;
+    return res;
+  } 
+  object *res = new_object(T_REAL);
+  res->val.real = number_value(a) - number_value(b);;
+  return res;
+}
+
+object* __mul(object* a, object* b){ 
+  if (!true(__numberp(a)) || !true(__numberp(b))) {
+    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
+  }
+  if (a->type == T_INT && b->type == T_INT) {
+    object *res = new_object(T_INT);
+    res->val.int_ = a->val.int_ * b->val.int_;
+    return res;
+  } 
+  object *res = new_object(T_REAL);
+  res->val.real = number_value(a) * number_value(b);;
+  return res;
+}
 
 object *sunday() {
   printf("Jarvis Cocker's Sunday Service\n");
@@ -138,10 +183,6 @@ object *__cons(object *a, object *b) {
 
 #define ADD(scm_name,func,arity) add_to_environment(env,#scm_name,new_builtin_proc(&func,arity))
 void add_builtins_to_env(environ *env) {
-  ADD(display,    __display,1);
-
-  ADD(cons,       __cons,2);
-
   ADD(symbol?,    __symbolp,1);
   ADD(char?,      __charp, 1);
   ADD(vector?,    __vectorp, 1);
@@ -150,6 +191,14 @@ void add_builtins_to_env(environ *env) {
   ADD(boolean?,   __booleanp, 1);
   ADD(number?,    __numberp, 1);
   ADD(null?,      __nullp, 1);
+
+  ADD(display,    __display,1);
+
+  ADD(cons,       __cons,2);
+
+  ADD(+, __add,2);
+  ADD(-, __sub,2);
+  ADD(*, __mul,2);
 
   // Some test builtins
   ADD(print,   print,1);

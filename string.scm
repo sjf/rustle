@@ -23,7 +23,6 @@
 ;;     (cond ((< 0 pos) -1)
 ;;           ((equal? c (string-at s pos) pos))
 ;;           (else (loop (- pos 1))))))
-           
     
 (define (join lst sep)
   (define strs (map to-str lst))

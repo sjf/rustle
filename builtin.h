@@ -9,19 +9,19 @@
 void add_builtins_to_env(environ *env);
 
 object *print(object *obj);
-object *display(object *obj);
+object *__display(object *obj);
 object *print(object *obj);
 object *add(object *a, object *b);
 object *sunday();
 
-object *cons(object *a, object *b);
+object *__cons(object *a, object *b);
 
-object *symbolp(object *a);
-object *charp(object *a); 
-object *vectorp(object *a);
-object *pairp(object *a); 
-object *procedurep(object *a);
-object *booleanp(object *a); 
-object *numberp(object *a);
+object *__symbolp(object *a);
+object *__charp(object *a); 
+object *__vectorp(object *a);
+object *__pairp(object *a); 
+object *__procedurep(object *a);
+object *__booleanp(object *a); 
+object *__numberp(object *a);
 
 #endif

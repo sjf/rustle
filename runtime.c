@@ -205,10 +205,11 @@ object *call_procedure(object *obj, int arglen, ...) {
 }
 
 environ* setup_main_environment() {
-  none_object.type = T_NONE;
-  true_object.type = T_TRUE;
+  none_object.type  = T_NONE;
+  true_object.type  = T_TRUE;
   false_object.type = T_FALSE;
-
+  null_object.type  = T_NULL;
+  
   init_env(&builtins);
   add_builtins_to_env(&builtins);
 

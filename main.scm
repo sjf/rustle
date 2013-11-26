@@ -16,6 +16,7 @@
 (define T_TRUE     (quote T_TRUE))
 (define T_FALSE    (quote T_FALSE))
 (define T_PAIR     (quote T_PAIR))
+(define T_NULL     (quote T_NULL))
 
 (define (ir-type-of l) (car l))
 (define (ir-value-of l) (caddr l))
@@ -36,7 +37,7 @@
 (define (gen-null-const)
   ;; TODO use static const null object like t/f
   (list *expression* *t_var*
-        (c-new-obj T_PAIR (list 0 0))))
+        (c-new-obj T_NULL 'unused)))
 
 ;; Data constants
 (define (gen-pair-const value)

@@ -49,14 +49,15 @@
 
 (define (c-param-list lst) (join lst ", "))
 
-(define (c-gen-true) "(&true_object)")
-(define (c-gen-false)"(&false_object)")
-(define (c-gen-none) "(&none_object)")
+(define (c-gen-true)  "(&true_object)")
+(define (c-gen-false) "(&false_object)")
+(define (c-gen-none)  "(&none_object)")
 
 (define (c-new-obj type value)
-  (cond ((eq? T_TRUE value) (c-gen-true))
-        ((eq? T_FALSE value) (c-gen-false))
-        ((eq? T_NONE value) (c-gen-none))
+  (cond ((eq? T_TRUE  type) "(&true_object)")
+        ((eq? T_FALSE type) "(&false_object)")
+        ((eq? T_NONE  type) "(&none_object)")
+        ((eq? T_NULL  type) "(&null_object)")
         (else
          (define var_name (c-varname "v"))
          (emit-code (sprintf "object *~a = new_object(~a);" 

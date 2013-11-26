@@ -5,9 +5,49 @@
 #include <runtime.h>
 #include <builtin.h>
 
-object *type_eq(object *a, char type);
+/** 
+ * Type Predicates
+ **/
 
-object *display(object *obj) {
+object *type_eq(object *a, char type) {
+  if (a->type == type) {
+      return &true_object;
+  }
+  return &false_object;
+}
+
+int true(object *a) {
+  return a->type == T_TRUE;
+}
+
+object *__symbolp(object *a) { return type_eq(a, T_SYMBOL); }
+object *__charp(object *a) { return type_eq(a, T_CHAR); }
+object *__vectorp(object *a) { return type_eq(a, T_VECTOR); }
+object *__pairp(object *a) { return type_eq(a, T_PAIR); }
+object *__procedurep(object *a) { return type_eq(a, T_PROC); }
+object *__nullp(object *a) { return type_eq(a, T_NULL); }
+
+object *__booleanp(object *a) {
+  if (a->type == T_TRUE || 
+      a->type == T_FALSE) {
+    return &true_object;
+  }
+  return &false_object;
+}
+
+object *__numberp(object *a) { 
+  if (a->type == T_INT ||
+      a->type == T_REAL) {
+    return &true_object;
+  }
+  return &false_object;
+}
+
+/** 
+ * Display various kinds of objects
+ **/
+
+object *__display(object *obj) {
   switch (obj->type) {
   case T_NONE:
     printf("#No-value");
@@ -32,27 +72,40 @@ object *display(object *obj) {
     break;
   case T_PROC:
     printf("#Procedure-(%d arguments)", obj->val.proc.arity);
+   break;
+  case T_NULL:
+    printf("()");
     break;
-  case T_PAIR:
-    if ((obj->val.pair.car == NULL) &&
-        (obj->val.pair.cdr == NULL)) {
-      printf("()");
-    } else {
-      printf("(");
-      display(obj->val.pair.car);
-      printf(" . ");
-      display(obj->val.pair.cdr);
-      printf(")");
+  case T_PAIR: 
+    {
+    object *head = obj;
+    printf("(");
+    while (true(__pairp(head->val.pair.cdr))) {
+      // list
+      __display(head->val.pair.car);
+      printf(" ");
+      head = head->val.pair.cdr;
     }
-    break;
+    if (true(__nullp(head->val.pair.cdr))) {
+      // empty list
+      __display(head->val.pair.car);
+    } else {
+      // cons cell
+      __display(head->val.pair.car);
+      printf(" . ");
+      __display(head->val.pair.cdr);
+    } 
+    printf(")");
+    break; 
+    }
   default:
-    FatalError("Unsupported type: %i", obj->type);
+    FatalError("display: Unsupported type: %i", obj->type);
   }
   return &none_object;
 }
 
 object *print(object *obj) {
-  display(obj);
+  __display(obj);
   printf("\n");
   return &none_object;
 }
@@ -72,58 +125,34 @@ object *sunday() {
   return &none_object;
 }
 
-object *cons(object *a, object *b) {
+object *__cons(object *a, object *b) {
   object *res = new_object(T_PAIR);
   res->val.pair.car = a;
   res->val.pair.cdr = b;
   return res;
 }
 
-object *symbolp(object *a) { return type_eq(a, T_SYMBOL);}
-object *charp(object *a) { return type_eq(a, T_CHAR);}
-object *vectorp(object *a) { return type_eq(a, T_VECTOR);}
-object *pairp(object *a) { return type_eq(a, T_PAIR);}
-object *procedurep(object *a) { return type_eq(a, T_PROC);}
-
-object *booleanp(object *a) {
-  if (a->type == T_TRUE || 
-      a->type == T_FALSE) {
-    return &true_object;
-  }
-  return &false_object;
-}
-
-object *numberp(object *a) { 
-  if (a->type == T_INT ||
-      a->type == T_REAL) {
-    return &true_object;
-  }
-  return &false_object;
-}
-
-object *type_eq(object *a, char type) {
-  if (a->type == type) {
-      return &true_object;
-  }
-  return &false_object;
-}
+/**
+ * Setting up the global environment 
+ **/
 
 #define ADD(scm_name,func,arity) add_to_environment(env,#scm_name,new_builtin_proc(&func,arity))
 void add_builtins_to_env(environ *env) {
-  ADD(display, display,1);
-  ADD(print,   print,1);
+  ADD(display,    __display,1);
 
-  ADD(cons,    cons,2);
+  ADD(cons,       __cons,2);
 
-  ADD(symbol?, symbolp,1);
-  ADD(char?,   charp, 1);
-  ADD(vector?, vectorp, 1);
-  ADD(pair?,   pairp,1);
-  ADD(procedure?, procedurep, 1);
-  ADD(boolean?,   booleanp, 1);
-  ADD(number?, numberp, 1);
+  ADD(symbol?,    __symbolp,1);
+  ADD(char?,      __charp, 1);
+  ADD(vector?,    __vectorp, 1);
+  ADD(pair?,      __pairp,1);
+  ADD(procedure?, __procedurep, 1);
+  ADD(boolean?,   __booleanp, 1);
+  ADD(number?,    __numberp, 1);
+  ADD(null?,      __nullp, 1);
 
   // Some test builtins
+  ADD(print,   print,1);
   object *test = new_object(T_INT);
   test->val.int_ = 666;
   add_to_environment(&builtins, "evil", test);

@@ -12,7 +12,7 @@
 #define T_SYMBOL  6
 #define T_PAIR    7
 #define T_PROC    8
-#define T_EMPTYLIST 9
+#define T_NULL    9
 #define T_REAL   10
 #define T_VECTOR 11
 
@@ -54,6 +54,7 @@ environ builtins;
 object none_object; 
 object true_object;
 object false_object;
+object null_object;
 
 object *new_object(char type);
 object *new_object_from(object *obj);

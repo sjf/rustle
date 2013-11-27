@@ -51,7 +51,7 @@ struct object_ {
     char chr;
     proc proc;
     pair pair;
-    // others list, vector, char, t/f
+    // TODO others vector, port
   } val;
 };
 

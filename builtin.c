@@ -114,20 +114,37 @@ const char* type_name(object *a) {
   return TYPE_NAME[(int)a->type];
 }
 
+/**
+ * Numeric Functions
+ **/
+
+int is_number(object *a) {
+  return true(__numberp(a));
+}
+int is_int(object *a) {
+  return a->type == T_INT;
+}
 double number_value(object *a) {
   if (a->type == T_INT) {
     return a->val.int_;
   } else if (a->type == T_REAL) {
     return a->val.real;
   } 
-  FatalError("Unsupported numberical type: %s", type_name(a));
+  FatalError("Unsupported numerical type: %s", type_name(a));
+}
+
+#define TYPE_CHECK_NUM2(a,b) do { if (!is_number(a) || !is_number(b)){ \
+      FatalError("%s unsupported for type %s and %s",                  \
+                 __func__,type_name(a), type_name(b));}} while(0) 
+#define int_args(a,b) (is_int(a) && is_int(b))
+
+object *boolean(int bool) {
+  return bool ? &true_object : &false_object;
 }
 
 object* __add(object* a, object* b){ 
-  if (!true(__numberp(a)) || !true(__numberp(b))) {
-    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
-  }
-  if (a->type == T_INT && b->type == T_INT) {
+  TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)){
     object *res = new_object(T_INT);
     res->val.int_ = a->val.int_ + b->val.int_;
     return res;
@@ -138,10 +155,8 @@ object* __add(object* a, object* b){
 }
 
 object* __sub(object* a, object* b){ 
-  if (!true(__numberp(a)) || !true(__numberp(b))) {
-    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
-  }
-  if (a->type == T_INT && b->type == T_INT) {
+  TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
     object *res = new_object(T_INT);
     res->val.int_ = a->val.int_ - b->val.int_;
     return res;
@@ -151,11 +166,9 @@ object* __sub(object* a, object* b){
   return res;
 }
 
-object* __mul(object* a, object* b){ 
-  if (!true(__numberp(a)) || !true(__numberp(b))) {
-    FatalError("+ unsupported for type %s and %s", type_name(a), type_name(b));
-  }
-  if (a->type == T_INT && b->type == T_INT) {
+object* __mul(object *a, object *b){ 
+  TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
     object *res = new_object(T_INT);
     res->val.int_ = a->val.int_ * b->val.int_;
     return res;
@@ -163,6 +176,31 @@ object* __mul(object* a, object* b){
   object *res = new_object(T_REAL);
   res->val.real = number_value(a) * number_value(b);;
   return res;
+}
+
+object *__gt(object *a, object *b) {
+  TYPE_CHECK_NUM2(a,b);
+  return boolean(number_value(a) > number_value(b));
+}
+
+object *__lt(object *a, object *b) {
+  TYPE_CHECK_NUM2(a,b);
+  return boolean(number_value(a) < number_value(b));
+}
+
+object *__ge(object *a, object *b) {
+  TYPE_CHECK_NUM2(a,b);
+  return boolean(number_value(a) >= number_value(b));
+}
+
+object *__le(object *a, object *b) {
+  TYPE_CHECK_NUM2(a,b);
+  return boolean(number_value(a) <= number_value(b));
+}
+
+object *__eq(object *a, object *b) {
+  TYPE_CHECK_NUM2(a,b);
+  return boolean(number_value(a) == number_value(a));
 }
 
 object *sunday() {
@@ -183,22 +221,28 @@ object *__cons(object *a, object *b) {
 
 #define ADD(scm_name,func,arity) add_to_environment(env,#scm_name,new_builtin_proc(&func,arity))
 void add_builtins_to_env(environ *env) {
-  ADD(symbol?,    __symbolp,1);
+  ADD(symbol?,    __symbolp, 1);
   ADD(char?,      __charp, 1);
   ADD(vector?,    __vectorp, 1);
-  ADD(pair?,      __pairp,1);
+  ADD(pair?,      __pairp, 1);
   ADD(procedure?, __procedurep, 1);
   ADD(boolean?,   __booleanp, 1);
   ADD(number?,    __numberp, 1);
   ADD(null?,      __nullp, 1);
 
-  ADD(display,    __display,1);
+  ADD(display,    __display, 1);
 
-  ADD(cons,       __cons,2);
-
+  ADD(cons,       __cons, 2);
+  
   ADD(+, __add,2);
   ADD(-, __sub,2);
   ADD(*, __mul,2);
+
+  ADD(>,  __gt,2);
+  ADD(<,  __lt,2);
+  ADD(>=, __ge,2);
+  ADD(<=, __le,2);
+  ADD(=,  __eq,2);
 
   // Some test builtins
   ADD(print,   print,1);

@@ -2,6 +2,7 @@
 (require 'string)
 (require 'util)
 (require 'c_code)
+(require 'preprocessor)
 
 ;; some constants
 (define *expression* (quote expression))
@@ -65,8 +66,6 @@
         ((null? form)    (gen-null-const))
         ((pair? form)    (gen-pair-const form))
         (else (fatal-error "gen-define unimplemented:" form))))
-
-;;
 
 (define (var-name expr)
   (caddr expr))
@@ -194,8 +193,7 @@
         ;; todo generate empty list
         ((special? form) (gen-special form))
         ((list? form)    (gen-fun-call form))
-        (else (debug-log "Passing.. " form)))
-)
+        (else            (debug-log "Passing.. " form))))
 
 (define (generate-code src)
   (c-main)
@@ -209,17 +207,17 @@
   (if (< (length (argv)) 2 )
       (fatal-error "Usage ./compiler file.scm"))
   (define filename (cadr (argv)))
-  (define c_src (replace_ext! filename ".c"))
+  (define c_src (replace-ext filename ".c"))
 
   ;; Parse the file
-  (define src (read_all filename))
-  ;(set! src (transform-==> src))
+  (define src (read-scm-file filename))
+  (set! src (preprocessor src))
 
   ;; Generate code
   (generate-code src)
   (c-write-src-file c_src)
   ;; Call gcc
-  (c-compile c_src)
-  )
+  (c-compile c_src))
+  
 ;(trace main)      
 (main)

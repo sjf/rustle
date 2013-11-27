@@ -10,3 +10,6 @@ all variables have to be stored in the heap, not in the stack, or my own impleme
 
 Debugging help
 Keep an auxilary stack trace with the original names+line numbers of the scheme functions
+
+Features
+Compile time checks for unbound symbols since the whole environment is available

@@ -1,18 +1,20 @@
 ;;; Logging
 (define (fatal-error mesg . args)
   (print-call-chain (current-error-port))
-  (print-stderr (format "EE Error: ~a ~a~%" mesg (join args " ")))
+  (print-stderr (format "EE Error: ~a ~a~%" mesg 
+                        (string-join args " ")))
   (exit 1))
 
 (define (debug-log mesg . args)
-  (print-stderr (sprintf "II ~a ~a~%" mesg (join args " "))))
+  (print-stderr (sprintf "II ~a ~a~%" mesg 
+                         (string-join args " "))))
 
 (define (todo)
   (print-call-chain (current-error-port))
   (print-stderr (sprintf "EE TODO Error")))
 
 ;;; IO Functions 
-(define (read_all filename)
+(define (read-scm-file filename)
   (let loop ((port (open-input-file filename))
              (src (list)))
     (define x (read port))
@@ -20,9 +22,14 @@
         (reverse src)
         (loop port (cons x src)))))
 
-(define (replace_ext! filename ext)
+(define (get-extension filename)
   (define ind (string-index-right filename #\.))
-  (if (eq? ind -1)
+  (if (eq? ind #f) filename
+      (substring filename (+ ind 1))))
+
+(define (replace-ext filename ext)
+  (define ind (string-index-right filename #\.))
+  (if (eq? ind #f)
       (string-append filename ext)
       (string-append (substring filename 0 ind) ext)))
 

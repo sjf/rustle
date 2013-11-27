@@ -47,7 +47,7 @@
 )
 
 
-(define (c-param-list lst) (join lst ", "))
+(define (c-param-list lst) (string-join lst ", "))
 
 (define (c-gen-true)  "(&true_object)")
 (define (c-gen-false) "(&false_object)")
@@ -112,7 +112,7 @@
               function
               (length args)
               sep
-              (join args ", ")))
+              (string-join args ", ")))
   res_name)
 
 (define (c-main)
@@ -187,14 +187,14 @@ int main(int argc, char** argv) {
   (define port (open-output-file filename))
   (display *c_start* port)
   
-  (display (join *src* "\n") port) 
+  (display (string-join *src* "\n") port) 
 
   (display *c_end* port)
   (close-output-port port))
 
 
 (define (c-compile filename)
-  (define exec_filename (replace_ext! filename ""))
+  (define exec_filename (replace-ext filename ""))
   (process-execute 
    "gcc"
    (list "-g" 

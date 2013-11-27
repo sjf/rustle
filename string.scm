@@ -24,7 +24,7 @@
 ;;           ((equal? c (string-at s pos) pos))
 ;;           (else (loop (- pos 1))))))
     
-(define (join lst sep)
+(define (string-join lst sep)
   (define strs (map to-str lst))
   (let loop ((strs strs)
              (res ""))

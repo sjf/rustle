@@ -87,7 +87,8 @@
 
 (define (c-add-to-symbol-table symbol var)
   (emit-code (sprintf "add_to_environment(env, ~a, ~a);"
-                      (c-escape symbol) var)))
+                      (c-escape symbol) var))
+  var)
 
 (define (c-lookup-symbol-table symbol)
   (define var_name (c-varname "v"))
@@ -125,6 +126,10 @@
   (c-end-block))
 
 (define (c-new-procedure args)
+  ;; args can be symbol -> one arg
+  ;;             list -> required arguments (or no args)
+  ;;             pair -> car: required args 
+  ;;                     cdr: id of optional args
   (define proc_name (c-procname))
   (define var_name (c-varname "v"))
   (emit-code (sprintf 
@@ -133,7 +138,7 @@
   
   (define param-names (c-param-names args))
   (define params (map c-param-decl param-names))
-  ;; start writing the function body definition
+  ;; start writing the function body definition in a new block
   (c-new-block)
   ;; todo also emit a function prototype somewhere
   (define param-list 

@@ -5,6 +5,7 @@ C_SRCS = base.c runtime.c builtin.c
 OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 
 SCM = csc
+SCM_SRCS = main.scm c_code.scm preprocessor.scm string.scm util.scm
 SCM_FLAGS = -scrutinize
 
 all: main
@@ -15,7 +16,7 @@ all: main
 runtime.a: $(OBJS)
 	ar cr runtime.a $^
 
-main: main.scm runtime.a
+main: $(SCM_SRCS) runtime.a
 	$(SCM) $(SCM_FLAGS) $<
 
 .PHONY: clean

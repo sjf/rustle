@@ -1,16 +1,23 @@
-TARGET=main
-SCM_SRCS=string.scm util.scm c_code.scm 
+CC = gcc
+CFLAGS = -g -Werror -Wshadow -std=c99 -Wall -Wno-unused-variable -Wno-error=unused-but-set-variable -D_GNU_SOURCE -I.
 
-OBJS = $(patsubst %.scm,%.o,$(SCM_SRCS))
+C_SRCS = base.c runtime.c builtin.c
+OBJS = $(patsubst %.c,%.o,$(C_SRCS))
 
-%.o : %.scm
-	csc -embedded $<
+SCM = csc
+SCM_FLAGS = -scrutinize
 
-all: ${TARGET}
+all: main
 
-${TARGET}: $(OBJS) main.scm
-	csc -o $@ $(OBJS) main.scm
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+runtime.a: $(OBJS)
+	ar cr runtime.a $^
+
+main: main.scm runtime.a
+	$(SCM) $(SCM_FLAGS) $<
 
 .PHONY: clean
 clean :
-	-rm -f *.so *.o main
+	-rm -f *.so *.o *.a main

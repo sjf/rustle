@@ -4,6 +4,8 @@
 (require 'c_code)
 (require 'preprocessor)
 
+(require 'srfi-69)
+
 ;; some constants
 (define *expression* (quote expression))
 (define *procedure*  (quote procedure))
@@ -21,14 +23,12 @@
 
 ;(define (ir-new-expression value))
 ;(define (ir-new-procedure address result))
-(define (ir-new type value . const_value)
+(define (ir-new type value . rest)
   ;; Simple intermediate representation
   ;; Has a type, which should be expression or procedure
   ;; And a value, which is the C variable name or address
   ;; of the value.
-  ;; Optional const_value for constants, will be used later for 
-  ;; optimisation
-  (list 'IR type value (car-or-null const_value)))
+  (list 'IR type value rest))
 (define (ir-type-of l) (cadr l))
 (define (ir-value-of l) (caddr l))
 
@@ -36,7 +36,7 @@
 (define (gen-int-const value)
   (ir-new *expression* (c-new-obj T_INT value)))
 
-(define (gen-string-const value)  
+(define (gen-string-const value)
   (ir-new *expression* (c-new-obj T_STRING value)))
 
 (define (gen-symbol-const value)
@@ -47,16 +47,16 @@
 
 ;; Data constants
 (define (gen-pair-const value)
-  (define a (gen-define (car value)))
-  (define b (gen-define (cdr value)))
-  (ir-new *expression* 
+  (define a (gen-quote (car value)))
+  (define b (gen-quote (cdr value)))
+  (ir-new *expression*
         (c-new-obj T_PAIR (list (ir-value-of a)
                                 (ir-value-of b)))))
 
 (define (gen-vector-cons value)
   (todo))
 
-(define (gen-define form)
+(define (gen-quote form)
   (debug-log "Generating Data: " form  (type-of form))
   (cond ((integer? form) (gen-int-const form))
         ((string? form)  (gen-string-const form))
@@ -65,31 +65,19 @@
         ((eq? #f form)   (gen-false))
         ((null? form)    (gen-null-const))
         ((pair? form)    (gen-pair-const form))
-        (else (fatal-error "gen-define unimplemented:" form))))
+        (else (fatal-error "gen-quote unimplemented:" form))))
 
-(define (var-name expr)
+(define (var-name expr) ;;todo replace with ir-var-name/ir-value
   (caddr expr))
 
 (define (special? form)
   (and (list? form)
        (not (null? form))
-       (member? (car form) 
+       (member? (car form)
                 (quote (lambda let define set! quote if and or begin)))))
-    
+
 (define (gen-symbol symbol)
   (ir-new *expression* (c-lookup-symbol-table symbol)))
-             
-; special forms:
-; lambda
-; let, let*, letrec
-; define
-; set!
-; quote, quasiquote
-; if, cond
-; and or
-; begin
-; let, do loops
-; 
 
 (define (type-of x)
   (cond ((string? x) "string")
@@ -97,93 +85,114 @@
         ((symbol? x) "symbol")
         ((eq? #t x)  "#t")
         ((eq? #f x)  "#f")
-        ((char? x)   "char")        
+        ((char? x)   "char")
         ((null? x)   "empty-list")
         ((special? x) "special-form")
         ((pair? x)   "pair")))
 
-(define (gen-fun-call form)
-  (define lst (map generate form))
-  (if (null? lst)
+(define (gen-fun-call form env)
+  (if (null? form)
       (fatal-error "Cannot call empty list"))
-  (define func (car lst))
+  (define lst (map (lambda (f) (generate f env)) form))
+  (debug-log "Calling: " (car lst))
   ;(if (not (eq? *procedure* (ir-type-of func)))
   ;    (fatal-error "Cannot call" func))
+  (define func (ir-value-of (car lst)))
   (define args (map ir-value-of (cdr lst)))
-  (define res_name 
-    (c-call-function (ir-value-of func) args))  
+  (define res_name (c-call-function func args))
   (ir-new *expression* res_name))
 
 (define (check-args= args expected-len function)
   (if (not (eq? expected-len (length args)))
-      (fatal-error (sprintf 
-                    "Expected ~a arguments, got ~a: ~a" 
-                    expected-len (length args) function))))
+      (fatal-error (sprintf
+                    "'~a' expected ~a arguments, got ~a"
+                    function expected-len (length args)))))
 (define (check-args<= args min-len function)
   (if (< (length args) min-len)
-      (fatal-error (sprintf 
-                    "Expected at least ~a arguments, got ~a: ~a" 
-                    min-len (length args) function))))
+      (fatal-error (sprintf
+                    "'~a' expected at least ~a arguments, got ~a"
+                    function min-len (length args)))))
 
-(define (check-type arg type-pred function)
+(define (check-type arg type-pred function . mesg)
   (if (not (type-pred arg))
-      (fatal-error (sprintf "Unexpected type got ~a: ~a"
-                            (type-of arg) function))))
+      (fatal-error (sprintf
+                    "'~a' passed unexpected type, recieved '~a': ~a ~a"
+                    function (type-of arg) arg (string-join mesg " ")))))
 (define (gen-true)
   (ir-new *expression* (c-gen-true) #t))
 (define (gen-false)
   (ir-new *expression* (c-gen-false) #f))
 
 
-(define (gen-special form) 
+(define (gen-special form env)
   (define val (car form))
   (define args (cdr form))
   (cond ((eq? val (quote set!))
-         ;; some compile time checking for special forms
          (check-args= args 2 "set!")
-         (check-type (car args) symbol? "set!")
-         (define value_name (var-name (generate (cadr args))))
-         (define sym_name (var-name (gen-symbol (car args))))
-         (c-assign sym_name value_name)
-         (ir-new *expression* (c-gen-none) #f))
-         
-        ((eq? val (quote define)) 
+         (check-type (car args) symbol? "set!"
+                     "Only the form (set! symbol expr) is supported")
+         (letrec ((symbol (car args))
+                  (dest   (gen-symbol symbol))
+                  (value  (generate (cadr args) env)))
+           (env-insert! symbol dest env)
+           (env-display env)
+           (c-assign (var-name dest) (var-name value))
+           ;; Return value of set! is undefined
+           (ir-new *expression* (c-gen-none) #f)))
+
+        ((eq? val (quote define))
          (check-args= args 2 "define")
          (check-type (car args) symbol? "define")
-         (define var_name (var-name (generate (cadr args))))
-         (define sym_name (car args))
-         (c-add-to-symbol-table sym_name var_name))
-         
+         (let ((name (car args))
+               (value (generate (cadr args) env)))
+           (env-insert! name value env)
+           (c-add-to-symbol-table name (var-name value))))
+
         ((eq? val (quote lambda))
          (check-args<= args 2 "lambda")
          (define formals (car args))
-         (define body (cdr args))         
-         (check-type formals 
-                     (lambda (x) (or (list? x)
-                                     (symbol? x))) "lambda")
-         (debug-log "Generating lambda: " body)      
-         (define proc (c-new-procedure formals))
-         (define res (last (map generate body)))
-         ; Return value will be available in res
-         (c-end-procedure (ir-value-of res))
-         (ir-new *procedure* proc))
+         (define body (cdr args))
+         (check-type formals
+                     (lambda (x) (or (symbol? x)
+                                     (list? x)
+                                     (pair? x))) "lambda")
+         (define (parse-args formals)
+           (cond ((symbol? formals)
+                    (list (list formals) #f))
+                 ((list? formals)
+                  (list formals #f))
+                 (else
+                  (let loop ((formals formals)
+                             (args (list)))
+                    (cond
+                     ((pair? (cdr formals))
+                      (loop (cdr formals) (cons (car formals) args)))
+                     ((pair? formals)
+                      (list (reverse (cons (car formals) args)) (cdr formals))))))))
+         (let ((proc (c-new-procedure
+                      (car (parse-args formals))
+                      (cadr (parse-args formals))))
+               (res  (last (map (lambda (form)
+                                  (generate form env)) body))))
+           ; Return value will be available in res
+           (c-end-procedure (ir-value-of res))
+           (ir-new *procedure* proc formals)))
 
         ((eq? val (quote if))
          (check-args= args 3 "if")
          (define pred (car args))
          (define true_expr (cadr args))
          (define false_expr (caddr args))
-         (define res (c-if (ir-value-of (generate pred))))
-         (c-else res (ir-value-of (generate true_expr)))
-         (c-endif res (ir-value-of (generate false_expr)))
+         (define res (c-if (ir-value-of (generate pred env))))
+         (c-else res (ir-value-of (generate true_expr env)))
+         (c-endif res (ir-value-of (generate false_expr env)))
          (ir-new *expression* res))
         ((eq? val (quote quote))
          (check-args= args 1 "quote")
-         (gen-define (car args)))
+         (gen-quote (car args)))
         (else (fatal-error "Unsupported special form: " val))))
-  
 
-(define (generate form)
+(define (generate form env)
   (debug-log "Generating: " form " " (type-of form))
   (cond ((integer? form) (gen-int-const form))
         ((string? form)  (gen-string-const form))
@@ -191,18 +200,51 @@
         ((eq? #t form)   (gen-true))
         ((eq? #f form)   (gen-false))
         ;; todo generate empty list
-        ((special? form) (gen-special form))
-        ((list? form)    (gen-fun-call form))
+        ((special? form) (gen-special form env))
+        ((list? form)    (gen-fun-call form env))
         (else            (debug-log "Passing.. " form))))
+
+;; Functions for manipulating the namespace hashtables
+;; env datastructure: list of hashtables, one for each nested
+;; namespace.
+;; hashtable entries are symbol -> IR list
+(define (env-new-ns env)
+  (cons (make-hash-table) env))
+(define (env-lookup symbol env)
+  (cond ((null? env) #f))
+  (let ((res (hash-table-ref/default (car env) symbol #f)))
+    (if res res
+        (env-lookup symbol (cdr env)))))
+(define (env-insert! symbol value env)
+  (hash-table-set! (car env) symbol value))
+
+(define (env-display env)
+  (define (display-ns ns depth)
+    (define (display-entry pair)
+      (printf "~a~a ==> ~a~%" (make-string depth)
+              (car pair) (cdr pair)))
+    (let ((alist (hash-table->alist ns)))
+      (define (cmp a b) (string> (symbol->string (car a))
+                                 (symbol->string (car b))))
+      (sort! alist cmp)
+      (map display-entry alist)))
+  (print " **** ENV **** ")
+  (let loop ((i 0)
+             (env env))
+    (cond ((not (null? env))
+           (display-ns (car env) i)
+           (loop (+ i 1) (cdr env))))))
 
 (define (generate-code src)
   (c-main)
   ;; add setup code for main namespace
-  (map generate src)
+  (define env (env-new-ns '()))
+  (map (lambda (form) (generate form env))  src)
   (c-end-main)
+  (env-display env)
   #t)
 
-(define (main) 
+(define (main)
   (debug-log "Rustle Scheme to C Compiler 0.0")
   (if (< (length (argv)) 2 )
       (fatal-error "Usage ./compiler file.scm"))
@@ -218,6 +260,6 @@
   (c-write-src-file c_src)
   ;; Call gcc
   (c-compile c_src))
-  
-;(trace main)      
+
+;(trace main)
 (main)

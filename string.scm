@@ -1,5 +1,4 @@
 ;; String functions
-
 (define (string-empty? s)
   (eq? (string-length s) 0))
 

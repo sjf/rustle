@@ -49,6 +49,7 @@
 (define (car-or-null lst)
   (if (null? lst) lst
       (car lst)))
+
 ;;; Some missing scheme functions
 (define (repeat what times)
   (let loop ((res (list))

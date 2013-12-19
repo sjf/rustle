@@ -1,5 +1,7 @@
 (require 'util)
 (define (preprocessor src) 
+  ;; Include the standard scheme runtime library
+  (set! src (cons '(require "prelude") src))
   (join (map preprocess src)))
 
 (define (preprocess form)

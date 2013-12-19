@@ -1,0 +1,8 @@
+;; TODO Doesn't handle (list)
+(define list (lambda (a . rest) (cons a rest)))
+;; TODO Support (map f list1 list2 ...)
+(define map (lambda (f l) l))
+              ;(print "|")(print l)(print "|")
+              ;(if (null? l)
+              ;    (quote ())
+              ;    (cons (f (car l)) (map f (cdr l))))))

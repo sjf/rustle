@@ -1,8 +1,0 @@
-(print (quote (a . b)))
-;> (a . b)
-(print (quote (1 2 3)))
-;> (1 2 3)
-(print (quote ()))
-;> ()
-(print (quote (1 2 . 3)))
-;> (1 2 . 3)

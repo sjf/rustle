@@ -3,6 +3,7 @@
 #include <execinfo.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Obtain a backtrace and print it to stdout. */
 void print_trace (void) {
@@ -20,4 +21,13 @@ void print_trace (void) {
     printf ("%s\n", strings[i]);
   
   free (strings);
+}
+
+void *mallocz(size_t size) {
+  void *buf = malloc(size);
+  if (buf == NULL) {
+    FatalSysError("malloc failed");
+  }
+  bzero(buf, size);
+  return buf;
 }

@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <signal.h>
+
 #define FatalError(x, args...) do{fprintf(stderr," !! error at %s:%i:%s ", __FILE__,__LINE__,__FUNCTION__); \
                                   fprintf(stderr,x, ##args); fprintf(stderr,"\n"); \
                                   fail(); \
@@ -29,7 +32,9 @@
                           } while (0)
 
 #ifdef _DEBUG_
-#define fail() abort()
+#define fail() raise(SIGSEGV)
 #else
 #define fail() exit(1)
 #endif
+
+void *mallocz(size_t size);

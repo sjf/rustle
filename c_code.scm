@@ -139,21 +139,20 @@
   (c-new-block)
   (emit-code (sprintf "object* ~a(environ *env, object **args, int arglen) {" proc_name))
   ;; Add arguments to the function's environment
-
   (let loop ((n 0)
              (args args))
     (cond ((not (null? args))
            (emit-code (sprintf
                        "add_to_environment(env, \"~a\", args[~a]);" (car args) n))
            (loop (inc n) (cdr args)))))
+  ;; Construct a list containing the optional arguments
   (cond (optional
           (define optional-list (c-varname (symbol->string optional)))
           (emit-code (sprintf "object *~a = &null_object;" optional-list))
-          (emit-code (sprintf "for (int i = ~a; i < arglen; i++) {" (length args)))
+          (emit-code (sprintf "for (int i = arglen - 1; i >= ~a; i--) {" (length args)))
           (emit-code (sprintf "  ~a = __cons(args[i], ~a);" optional-list optional-list))
           (emit-code (sprintf "}"))
           (emit-code (sprintf "add_to_environment(env, \"~a\", ~a);" optional optional-list))))
-
   result_var)
 
 (define (c-end-procedure result)

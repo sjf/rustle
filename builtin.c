@@ -148,6 +148,9 @@ int is_number(object *a) {
 int is_int(object *a) {
   return a->type == T_INT;
 }
+int int_value(object *a) {
+  return a->val.int_;
+}
 double number_value(object *a) {
   if (a->type == T_INT) {
     return a->val.int_;
@@ -162,7 +165,7 @@ object* __add(object* a, object* b){
   TYPE_CHECK_NUM2(a,b);
   if (int_args(a,b)){
     object *res = new_object(T_INT);
-    res->val.int_ = a->val.int_ + b->val.int_;
+    res->val.int_ = int_value(a) + int_value(b);
     return res;
   }
   object *res = new_object(T_REAL);
@@ -174,7 +177,7 @@ object* __sub(object* a, object* b){
   TYPE_CHECK_NUM2(a,b);
   if (int_args(a,b)) {
     object *res = new_object(T_INT);
-    res->val.int_ = a->val.int_ - b->val.int_;
+    res->val.int_ = int_value(a) - int_value(b);
     return res;
   }
   object *res = new_object(T_REAL);
@@ -186,7 +189,7 @@ object* __mul(object *a, object *b){
   TYPE_CHECK_NUM2(a,b);
   if (int_args(a,b)) {
     object *res = new_object(T_INT);
-    res->val.int_ = a->val.int_ * b->val.int_;
+    res->val.int_ = int_value(a) * int_value(b);
     return res;
   }
   object *res = new_object(T_REAL);
@@ -196,27 +199,42 @@ object* __mul(object *a, object *b){
 
 object *__gt(object *a, object *b) {
   TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
+    return boolean(int_value(a) > int_value(b));
+  }
   return boolean(number_value(a) > number_value(b));
 }
 
 object *__lt(object *a, object *b) {
   TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
+    return boolean(int_value(a) < int_value(b));
+  }
   return boolean(number_value(a) < number_value(b));
 }
 
 object *__ge(object *a, object *b) {
   TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
+    return boolean(int_value(a) >= int_value(b));
+  }
   return boolean(number_value(a) >= number_value(b));
 }
 
 object *__le(object *a, object *b) {
   TYPE_CHECK_NUM2(a,b);
+  if (int_args(a,b)) {
+    return boolean(int_value(a) <= int_value(b));
+  }
   return boolean(number_value(a) <= number_value(b));
 }
 
 object *__eq(object *a, object *b) {
   TYPE_CHECK_NUM2(a,b);
-  return boolean(number_value(a) == number_value(a));
+  if (int_args(a,b)) {
+    return boolean(int_value(a) == int_value(b));
+  }
+  return boolean(number_value(a) == number_value(b));
 }
 
 /**

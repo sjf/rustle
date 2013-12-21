@@ -37,16 +37,31 @@
 (define (c-param-decl arg)
   (string-append "object* " (cdr arg)))
 
-(define (c-escape s)
-  ;; todo
-  (sprintf "\"~a\"" s)
-)
+(define (c-escape-string s)
+  (define (escape-char s)
+    (cond ((eq? #\" s) "\\\"")
+          ((eq? #\\ s) "\\\\")
+          ((eq? #\newline s) "\\n")
+          ((eq? #\return s) "\\r")
+          (else (make-string 1 s))))
+  (define escaped (let loop ((i 0)
+                             (res (list)))
+                    (cond ((= i (string-length s))
+                           (string-join (reverse res) ""))
+                          (else (loop (inc i)
+                                      (cons (escape-char (string-ref s i)) res))))))
+  (sprintf "\"~a\"" escaped))
+
 (define (c-escape-char c)
   (define escaped (cond ((eq? #\' c) "\\'")
                         ((eq? #\return c) "\\r")
                         ((eq? #\newline c) "\\n")
                         (else c)))
   (sprintf "'~a'" escaped))
+
+(define (c-escape s)
+  ;; TODO
+  (sprintf "\"~a\"" s))
 
 (define (c-ident s)
   ;; todo rm characters that cannot occur in idents
@@ -83,7 +98,7 @@
            ((T_STRING)
             (emit-code (sprintf
                         "obj_set_str_val(~a, ~a);"
-                        var_name (c-escape value))))
+                        var_name (c-escape-string value))))
            ((T_PAIR)
              (emit-code (sprintf
                          "obj_set_pair_val(~a, ~a, ~a);"

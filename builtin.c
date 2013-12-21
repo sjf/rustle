@@ -30,17 +30,17 @@ int true(object *a) {
 /**
  * Type Predicates
  **/
-object *__symbolp(object *a) { return type_eq(a, T_SYMBOL); }
-object *__charp(object *a) { return type_eq(a, T_CHAR); }
-object *__vectorp(object *a) { return type_eq(a, T_VECTOR); }
-object *__pairp(object *a) { return type_eq(a, T_PAIR); }
-object *__procedurep(object *a) { return type_eq(a, T_PROC); }
-object *__nullp(object *a) { return type_eq(a, T_NULL); }
-
 object *__booleanp(object *a) {
   return boolean(a->type == T_TRUE ||
                  a->type == T_FALSE);
 }
+object *__nullp(object *a) { return type_eq(a, T_NULL); }
+object *__symbolp(object *a) { return type_eq(a, T_SYMBOL); }
+object *__charp(object *a) { return type_eq(a, T_CHAR); }
+object *__stringp(object *a) { return type_eq(a, T_STRING); }
+object *__vectorp(object *a) { return type_eq(a, T_VECTOR); }
+object *__pairp(object *a) { return type_eq(a, T_PAIR); }
+object *__procedurep(object *a) { return type_eq(a, T_PROC); }
 
 object *__numberp(object *a) {
   return boolean(a->type == T_INT ||
@@ -387,14 +387,16 @@ object *__list(environ *env, object **args, int arglen) {
 
 #define ADD(scm_name,func,arity) add_to_environment(env,#scm_name,new_builtin_proc(&func,arity))
 void add_builtins_to_env(environ *env) {
+  ADD(boolean?,   __booleanp, 1);
+  ADD(null?,      __nullp, 1);
   ADD(symbol?,    __symbolp, 1);
   ADD(char?,      __charp, 1);
+  ADD(string?,    __stringp, 1);
   ADD(vector?,    __vectorp, 1);
   ADD(pair?,      __pairp, 1);
   ADD(procedure?, __procedurep, 1);
-  ADD(boolean?,   __booleanp, 1);
+
   ADD(number?,    __numberp, 1);
-  ADD(null?,      __nullp, 1);
   ADD(atom?,      __atomp, 1);
 
   ADD(string->symbol, __stringtosymbol, 1);

@@ -276,12 +276,14 @@ object *__apply(object *theproc, object *args) {
   return result;
 }
 
+/* Implemented in prelude.
 object *__not(object *a) {
   if (a->type == T_FALSE) {
     return &true_object;
   }
   return &false_object;
 }
+*/
 
 /**
  * R4RS 6.2 Equivalence predicates
@@ -309,7 +311,7 @@ object *__eqvp(object *a, object *b) {
   case T_STRING:
     return boolean(a->val.str == b->val.str);
   case T_SYMBOL:
-    return boolean(strcmp(a->val.sym, b->val.sym) == 0);
+    return boolean(strcasecmp(a->val.sym, b->val.sym) == 0);
   case T_PAIR:
     return boolean(a->val.pair.car == b->val.pair.car &&
                    a->val.pair.cdr == b->val.pair.cdr);
@@ -318,8 +320,8 @@ object *__eqvp(object *a, object *b) {
   case T_VECTOR:
   default:
     FatalError("Unimplemented for type: %s", obj_type_name(a));
+    return &none_object; // avoid gcc error
   }
-  return &none_object; // avoid gcc error
 }
 
 object *__equalp(object *a, object *b) {
@@ -349,8 +351,16 @@ object *__equalp(object *a, object *b) {
   case T_VECTOR:
   default:
     FatalError("Unimplemented for type: %s", obj_type_name(a));  
+    return &none_object; // avoid gcc error
   }
-  return &none_object; // avoid gcc error
+}
+
+object *__list(environ *env, object **args, int arglen) {
+  object *result = &null_object;
+  for (int i = arglen - 1; i >= 0; i--) {
+    result = __cons(args[i], result);
+  }
+  return result;
 }
 
 /**
@@ -373,7 +383,7 @@ void add_builtins_to_env(environ *env) {
 
   ADD(apply,      __apply, 2);
   
-  ADD(not,        __not, 1);
+  //ADD(not,        __not, 1);
   ADD(eqv?,       __eqvp, 2);
   ADD(equal?,     __equalp, 2);
 
@@ -381,7 +391,12 @@ void add_builtins_to_env(environ *env) {
 
   ADD(cons,       __cons, 2);
   ADD(car,        __car, 1);
-  ADD(cdr,        __cdr, 2);
+  ADD(cdr,        __cdr, 1);
+  // list is a slightly special case, it takes 0-N args, but there is no support
+  // in the language definition for (define (list . args) ...). So list is 
+  // defined here although it is not using the builtin proc calling convention (which
+  // doesn't support varargs).
+  add_to_environment(env, "list", new_proc_object(&__list, 0, 1, NULL));
   
   ADD(+, __add, 2);
   ADD(-, __sub, 2);

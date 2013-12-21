@@ -71,6 +71,10 @@
             (emit-code (sprintf
                         "obj_set_sym_val(~a, ~a);"
                         var_name (c-escape value))))
+           ((T_CHAR)
+            (emit-code (sprintf
+                        "~a->val.chr = '~a';"
+                        var_name value)))
            ((T_STRING)
             (emit-code (sprintf
                         "obj_set_str_val(~a, ~a);"

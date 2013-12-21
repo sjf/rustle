@@ -12,14 +12,15 @@
 (define *t_var*      (quote var))
 
 ;; these must match the constants in builtin.c
-(define T_INT      (quote T_INT))
-(define T_STRING   (quote T_STRING))
-(define T_SYMBOL   (quote T_SYMBOL))
 (define T_NONE     (quote T_NONE))
 (define T_TRUE     (quote T_TRUE))
 (define T_FALSE    (quote T_FALSE))
-(define T_PAIR     (quote T_PAIR))
 (define T_NULL     (quote T_NULL))
+(define T_INT      (quote T_INT))
+(define T_SYMBOL   (quote T_SYMBOL))
+(define T_CHAR     (quote T_CHAR))
+(define T_STRING   (quote T_STRING))
+(define T_PAIR     (quote T_PAIR))
 
 ;(define (ir-new-expression value))
 ;(define (ir-new-procedure address result))
@@ -33,14 +34,23 @@
 (define (ir-value-of l) (caddr l))
 
 ;; Primitive values
+(define (gen-true)
+  (ir-new *expression* (c-gen-true) #t))
+
+(define (gen-false)
+  (ir-new *expression* (c-gen-false) #f))
+
 (define (gen-int-const value)
   (ir-new *expression* (c-new-obj T_INT value)))
 
-(define (gen-string-const value)
-  (ir-new *expression* (c-new-obj T_STRING value)))
-
 (define (gen-symbol-const value)
   (ir-new *expression* (c-new-obj T_SYMBOL value)))
+
+(define (gen-char-const value)
+  (ir-new *expression* (c-new-obj T_CHAR value)))
+
+(define (gen-string-const value)
+  (ir-new *expression* (c-new-obj T_STRING value)))
 
 (define (gen-null-const)
   (ir-new *expression* (c-new-obj T_NULL 'unused)))
@@ -118,11 +128,6 @@
       (fatal-error (sprintf
                     "'~a' passed unexpected type, recieved '~a': ~a ~a"
                     function (type-of arg) arg (string-join mesg " ")))))
-(define (gen-true)
-  (ir-new *expression* (c-gen-true) #t))
-(define (gen-false)
-  (ir-new *expression* (c-gen-false) #f))
-
 
 (define (gen-special form env)
   (define val (car form))
@@ -193,16 +198,16 @@
         (else (fatal-error "Unsupported special form: " val))))
 
 (define (generate form env)
-  (debug-log "Generating: " form " " (type-of form))
-  (cond ((integer? form) (gen-int-const form))
-        ((string? form)  (gen-string-const form))
-        ((symbol? form)  (gen-symbol form))
-        ((eq? #t form)   (gen-true))
+  (debug-log "Generating: " form (type-of form))
+  (cond ((eq? #t form)   (gen-true))
         ((eq? #f form)   (gen-false))
-        ;; todo generate empty list
+        ((symbol? form)  (gen-symbol form))
+        ((integer? form) (gen-int-const form))
+        ((char? form)    (gen-char-const form))
+        ((string? form)  (gen-string-const form))
         ((special? form) (gen-special form env))
         ((list? form)    (gen-fun-call form env))
-        (else            (debug-log "Passing.. " form))))
+        (else            (fatal-error "Unimplemented generate:" form (type-of form)))))
 
 ;; Functions for manipulating the namespace hashtables
 ;; env datastructure: list of hashtables, one for each nested

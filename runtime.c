@@ -172,8 +172,8 @@ object *call_builtin1(object *obj, object **args, int arglen) {
     return ((FPC(ARG,ARG,ARG,ARG))obj->val.proc.func)(args[0],args[1],args[2],args[3]);
   default:
     FatalError("Error calling builtin function with unsupported arity: %d",obj->val.proc.arity);
+    return &none_object; // Avoid gcc error
   }
-  return &none_object; // Avoid gcc error
 }
 
 object *call_proc(object *theproc, environ *env, 

@@ -41,11 +41,16 @@
   ;; todo
   (sprintf "\"~a\"" s)
 )
+(define (c-escape-char c)
+  (define escaped (cond ((eq? #\' c) "\\'")
+                        ((eq? #\return c) "\\r")
+                        ((eq? #\newline c) "\\n")
+                        (else c)))
+  (sprintf "'~a'" escaped))
 
 (define (c-ident s)
   ;; todo rm characters that cannot occur in idents
-  (to-str s)
-)
+  (to-str s))
 
 (define (c-param-list lst) (string-join lst ", "))
 
@@ -73,8 +78,8 @@
                         var_name (c-escape value))))
            ((T_CHAR)
             (emit-code (sprintf
-                        "~a->val.chr = '~a';"
-                        var_name value)))
+                        "~a->val.chr = ~a;"
+                        var_name (c-escape-char value))))
            ((T_STRING)
             (emit-code (sprintf
                         "obj_set_str_val(~a, ~a);"

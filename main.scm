@@ -68,12 +68,13 @@
 
 (define (gen-quote form)
   (debug-log "Generating Data: " form  (type-of form))
-  (cond ((integer? form) (gen-int-const form))
-        ((string? form)  (gen-string-const form))
-        ((symbol? form)  (gen-symbol-const form))
-        ((eq? #t form)   (gen-true))
+  (cond  ((eq? #t form)   (gen-true))
         ((eq? #f form)   (gen-false))
         ((null? form)    (gen-null-const))
+        ((symbol? form)  (gen-symbol-const form))
+        ((char? form)    (gen-char-const form))
+        ((string? form)  (gen-string-const form))
+        ((integer? form) (gen-int-const form))
         ((pair? form)    (gen-pair-const form))
         (else (fatal-error "gen-quote unimplemented:" form))))
 

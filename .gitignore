@@ -5,7 +5,11 @@ tests/*
 *.o
 *.s
 *.i
+*.a
 main
 a.out
 core
 \#*#
+doc/*
+TODO
+IDEAS

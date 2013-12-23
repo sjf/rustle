@@ -152,13 +152,16 @@
   (emit-code "}")
   (c-end-block))
 
-(define (c-new-procedure args optional)
+(define (c-new-procedure name args optional)
   (define proc_name (c-procname))
   (define result_var (c-varname "v"))
   (define has_optionals (if optional "1" "0"))
+  (define scm_name (sprintf "~a ~a" name
+                            (if optional (cons args optional) args)))
   (emit-code (sprintf
-              "object *~a = new_proc_object(&~a, ~a, ~a, env);"
-              result_var proc_name (length args) has_optionals))
+              "object *~a = new_proc_object(~a, &~a, ~a, ~a, env);"
+              result_var (c-escape-string scm_name) 
+              proc_name (length args) has_optionals))
   ;; start writing the function body definition in a new block
   (c-new-block)
   (emit-code (sprintf "object* ~a(environ *env, object **args, int arglen) {" proc_name))

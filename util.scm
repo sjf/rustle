@@ -1,4 +1,15 @@
 ;;; Logging
+(define (type-name x)
+  (cond ((eq? #t x)  "#t")
+        ((eq? #f x)  "#f")
+        ((symbol? x) "symbol")
+        ((char? x)   "char")
+        ((string? x) "string")
+        ((number? x) "number")
+        ((null? x)   "empty-list")
+        ((special? x) "special-form")
+        ((pair? x)   "pair")))
+
 (define (fatal-error mesg . args)
   (print-call-chain (current-error-port))
   (print-stderr (format "EE Error: ~a ~a~%" mesg 
@@ -12,6 +23,9 @@
 (define (todo)
   (print-call-chain (current-error-port))
   (print-stderr (sprintf "EE TODO Error")))
+
+(define (qq a)
+  (sprintf "\"~a\"" a))
 
 ;;; IO Functions 
 (define (read-scm-file filename)

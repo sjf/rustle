@@ -99,7 +99,7 @@ object *__display(object *obj) {
     printf("#f");
     break;
   case T_PROC:
-    printf("#Procedure-(%d arguments)", obj->val.proc.arity);
+    printf("#Procedure-(%s)", obj->val.proc.scm_name);
    break;
   case T_NULL:
     printf("()");
@@ -416,7 +416,7 @@ void add_builtins_to_env(environ *env) {
   // in the language definition for (define (list . args) ...). So list is 
   // defined here although it is not using the builtin proc calling convention (which
   // doesn't support varargs).
-  add_to_environment(env, "list", new_proc_object(&__list, 0, 1, NULL));
+  add_to_environment(env, "list", new_proc_object("list", &__list, 0, 1, NULL));
   
   ADD(+, __add, 2);
   ADD(-, __sub, 2);

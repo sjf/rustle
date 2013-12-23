@@ -40,6 +40,7 @@ typedef struct pair_ {
 } pair;
 
 typedef struct proc_ {
+  char *scm_name; // scheme name of the function or "lambda" if it was not created with define.
   void *func;
   int arity;
   char has_optional; // function takes optional arguments
@@ -71,7 +72,7 @@ object null_object;
 
 object *new_object(char type);
 object *new_object_from(object *obj);
-object *new_proc_object(void *func, int arity, int has_optional, environ* env);
+object *new_proc_object(char* scm_name, void *func, int arity, int has_optional, environ* env);
 object *new_builtin_proc(void *func, int arity);
 object *new_static_object(char type, void *value);
 

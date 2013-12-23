@@ -27,8 +27,9 @@ object *new_object_from(object *obj){
   return res;
 }
 
-object *new_proc_object(void *func, int arity, int has_optional, environ* env){
+object *new_proc_object(char* scm_name, void *func, int arity, int has_optional, environ* env){
   object *res = new_object(T_PROC);
+  res->val.proc.scm_name = strdup(scm_name);
   res->val.proc.func = func;
   res->val.proc.arity = arity;
   res->val.proc.has_optional = has_optional;

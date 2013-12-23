@@ -37,14 +37,14 @@
 
 ;; R4RS SECTION 2 1
 ;; test that all symbol characters are supported.
-(test (quote (+ - ... !.. $.+ %.- &.! *.: /:. :+. <-. =. >. ?. ~. _. ^.))
+(test '(+ - ... !.. $.+ %.- &.! *.: /:. :+. <-. =. >. ?. ~. _. ^.)
       (quote (+ - ... !.. $.+ %.- &.! *.: /:. :+. <-. =. >. ?. ~. _. ^.)))
 
 (test (cons (string->symbol "a") (string->symbol "b")) 
       (quote (a . b)))
-;(test (list) (quote ()))
-;(test (cons 1 (cons 3 (cons 3 (list)))) (quote (1 2 3)))
-(test (cons 1 (cons 2 3)) (quote (1 2 . 3)))
+(test (list) '())
+(test (cons 1 (cons 2 (cons 3 (list)))) '(1 2 3))
+(test (cons 1 (cons 2 3)) '(1 2 . 3))
 
 ;(define g (lambda () (define h (lambda () 42))))
 ;(define h1 (g))
@@ -63,13 +63,68 @@
 ;; Function calls with optional arguments
 (test #t              ((lambda () #t)))
 (test 1               ((lambda (z) z) 1))
-(test (quote (2 . 3)) ((lambda (x1 x2) (cons x1 x2)) 2 3))
+(test '(2 . 3)        ((lambda (x1 x2) (cons x1 x2)) 2 3))
 (test 4               ((lambda (x . rest) x) 4))
-(test (quote (5 . 6)) ((lambda (x1 x2 . rest) (cons x1 x2)) 5 6))
-;(test (quote (7 8 (9 10))) ((lambda (x1 x2 . rest) (list x1 x2 rest)) 7 8 9 10))
+(test '(5 . 6)        ((lambda (x1 x2 . rest) (cons x1 x2)) 5 6))
+(test '(7 8 9 10 11)  ((lambda (x1 x2 . rest) (cons x1 (cons x2 rest))) 7 8 9 10 11))
+(test '()  ((lambda x x)))
+(test '(1 2 3) ((lambda x x) 1 2 3))
+
+(define (foo) '())
+;(display foo)
+(test '() (foo))
+(define (bar a) a)
+;(display bar)
+(test 1 (bar 1))
+(define (buz a b) (list a b))
+;(display buz)
+(test '(1 2) (buz 1 2))
+(define (bux a . rest) (cons a rest))
+;(display bux)
+(test '(1 . (2 3)) (bux 1 2 3))
+(define (buy . rest) rest)
+;(display buy)
+(test '(10 20 30) (buy 10 20 30))
+(test '() (buy))
+;(display (lambda x x))
+;(display (lambda (a) a))
+;(display (lambda (a b . rest) '()))
 
 
 
 
-
-
+;(define disjoint-type-functions
+;  (list boolean? char? null? number? pair? procedure? string? symbol? vector?))
+;(define type-examples
+;  (list
+;   #t #f #\a '() 9739 '(test) record-error "test" "" 'test '#() '#(a b c) ))
+;(define i 1)
+;(for-each (lambda (x) (display (make-string i #\space))
+;		  (set! i (+ 3 i))
+;		  (write x)
+;		  (newline))
+;	  disjoint-type-functions)
+;(define type-matrix
+;  (map (lambda (x)
+;	 (let ((t (map (lambda (f) (f x)) disjoint-type-functions)))
+;	   (write t)
+;	   (write x)
+;	   (newline)
+;	   t))
+ ;      type-examples))
+;(set! i 0)
+;(define j 0)
+;(for-each (lambda (x y)
+;	    (set! j (+ 1 j))
+;	    (set! i 0)
+;	    (for-each (lambda (f)
+;			(set! i (+ 1 i))
+;			(cond ((and (= i j))
+;			       (cond ((not (f x)) (test #t f x))))
+;			      ((f x) (test #f f x)))
+;			(cond ((and (= i j))
+;			       (cond ((not (f y)) (test #t f y))))
+;			      ((f y) (test #f f y))))
+;		      disjoint-type-functions))
+;	  (list #t #\a '() 9739 '(test) record-error "test" 'car '#(a b c))
+;	  (list #f #\newline '() -3252 '(t . t) car "" 'nil '#()))
